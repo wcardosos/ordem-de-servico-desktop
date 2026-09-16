@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../core/deletion_result.dart';
 import '../core/service_order_status.dart';
+import '../core/transition_result.dart';
 import '../models/service_order.dart';
 import '../repositories/service_order_repository.dart';
 import '../services/database_helper.dart';
@@ -18,6 +19,9 @@ class ServiceOrderController extends ChangeNotifier {
 
   static const String deleteFailedMessage =
       'Não foi possível excluir a ordem de serviço. Tente novamente.';
+
+  static const String statusChangeFailedMessage =
+      'Não foi possível alterar o status. Tente novamente.';
 
   static const String deletedMessage = 'Ordem de serviço excluída.';
 
@@ -79,6 +83,38 @@ class ServiceOrderController extends ChangeNotifier {
     _orders = _orders.where((ServiceOrder order) => order.id != id).toList();
     notifyListeners();
     return DeletionResult.success;
+  }
+
+  Future<TransitionResult> changeStatus(
+    ServiceOrder order,
+    ServiceOrderStatus target,
+  ) async {
+    final TransitionResult result = order.validateTransitionTo(target);
+    if (result != TransitionResult.allowed) {
+      return result;
+    }
+    final DateTime now = DateTime.now();
+    final ServiceOrder changed = order.withStatus(
+      target,
+      completedAt: target == ServiceOrderStatus.completed
+          ? DateTime(now.year, now.month, now.day)
+          : null,
+    );
+    _error = null;
+    try {
+      await _repository.update(changed);
+    } on DatabaseAccessException {
+      _error = statusChangeFailedMessage;
+      notifyListeners();
+      rethrow;
+    }
+    try {
+      _orders = await _repository.findAll();
+    } on DatabaseAccessException {
+      _error = unavailableMessage;
+    }
+    notifyListeners();
+    return result;
   }
 
   Future<bool> _write(Future<Object?> Function() operation) async {

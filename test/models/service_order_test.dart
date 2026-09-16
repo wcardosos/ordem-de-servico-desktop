@@ -1,11 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/core/priority.dart';
 import 'package:ordem_de_servico/core/service_order_status.dart';
+import 'package:ordem_de_servico/core/transition_result.dart';
 import 'package:ordem_de_servico/models/service_order.dart';
 
 ServiceOrder buildOrder({
   required ServiceOrderStatus status,
-  required DateTime dueDate,
+  DateTime? dueDate,
+  int? technicianId,
+  String? diagnosis,
+  String? solution,
 }) {
   return ServiceOrder(
     number: 'OS-2026-0001',
@@ -15,7 +19,10 @@ ServiceOrder buildOrder({
     priority: Priority.medium,
     status: status,
     openedAt: DateTime(2026, 8, 20),
-    dueDate: dueDate,
+    dueDate: dueDate ?? DateTime(2026, 9, 30),
+    technicianId: technicianId,
+    diagnosis: diagnosis,
+    solution: solution,
   );
 }
 
@@ -165,6 +172,104 @@ void main() {
         'Impressora multifuncional HP LaserJet M428',
       );
       expect(order.technicianName, isNull);
+    });
+  });
+
+  group('validateTransitionTo', () {
+    const List<(ServiceOrderStatus, ServiceOrderStatus)> allowedTransitions =
+        <(ServiceOrderStatus, ServiceOrderStatus)>[
+          (ServiceOrderStatus.open, ServiceOrderStatus.assigned),
+          (ServiceOrderStatus.open, ServiceOrderStatus.cancelled),
+          (ServiceOrderStatus.assigned, ServiceOrderStatus.inProgress),
+          (ServiceOrderStatus.assigned, ServiceOrderStatus.cancelled),
+          (ServiceOrderStatus.inProgress, ServiceOrderStatus.awaitingPart),
+          (ServiceOrderStatus.inProgress, ServiceOrderStatus.completed),
+          (ServiceOrderStatus.inProgress, ServiceOrderStatus.cancelled),
+          (ServiceOrderStatus.awaitingPart, ServiceOrderStatus.inProgress),
+          (ServiceOrderStatus.awaitingPart, ServiceOrderStatus.cancelled),
+        ];
+
+    for (final (ServiceOrderStatus current, ServiceOrderStatus target)
+        in allowedTransitions) {
+      test(
+        'allows ${current.name} to ${target.name} when prerequisites are met',
+        () {
+          final ServiceOrder order = buildOrder(
+            status: current,
+            technicianId: 2,
+            diagnosis: 'Compressor com falha de partida',
+          );
+
+          expect(order.validateTransitionTo(target), TransitionResult.allowed);
+        },
+      );
+    }
+
+    const List<(ServiceOrderStatus, ServiceOrderStatus)> invalidTransitions =
+        <(ServiceOrderStatus, ServiceOrderStatus)>[
+          (ServiceOrderStatus.open, ServiceOrderStatus.inProgress),
+          (ServiceOrderStatus.open, ServiceOrderStatus.completed),
+          (ServiceOrderStatus.open, ServiceOrderStatus.open),
+          (ServiceOrderStatus.assigned, ServiceOrderStatus.open),
+          (ServiceOrderStatus.assigned, ServiceOrderStatus.completed),
+          (ServiceOrderStatus.inProgress, ServiceOrderStatus.assigned),
+          (ServiceOrderStatus.awaitingPart, ServiceOrderStatus.completed),
+          (ServiceOrderStatus.completed, ServiceOrderStatus.inProgress),
+          (ServiceOrderStatus.completed, ServiceOrderStatus.cancelled),
+          (ServiceOrderStatus.cancelled, ServiceOrderStatus.open),
+        ];
+
+    for (final (ServiceOrderStatus current, ServiceOrderStatus target)
+        in invalidTransitions) {
+      test(
+        'rejects ${current.name} to ${target.name} as an invalid target',
+        () {
+          final ServiceOrder order = buildOrder(
+            status: current,
+            technicianId: 2,
+            diagnosis: 'Compressor com falha de partida',
+            solution: 'Compressor substituído',
+          );
+
+          expect(
+            order.validateTransitionTo(target),
+            TransitionResult.invalidTarget,
+          );
+        },
+      );
+    }
+
+    test('rejects assignment without a technician', () {
+      final ServiceOrder order = buildOrder(status: ServiceOrderStatus.open);
+
+      expect(
+        order.validateTransitionTo(ServiceOrderStatus.assigned),
+        TransitionResult.technicianNotSet,
+      );
+    });
+
+    test('rejects completion without diagnosis or solution', () {
+      final ServiceOrder order = buildOrder(
+        status: ServiceOrderStatus.inProgress,
+        diagnosis: '',
+      );
+
+      expect(
+        order.validateTransitionTo(ServiceOrderStatus.completed),
+        TransitionResult.missingDiagnosisAndSolution,
+      );
+    });
+
+    test('treats a whitespace-only diagnosis as empty', () {
+      final ServiceOrder order = buildOrder(
+        status: ServiceOrderStatus.inProgress,
+        diagnosis: '   ',
+      );
+
+      expect(
+        order.validateTransitionTo(ServiceOrderStatus.completed),
+        TransitionResult.missingDiagnosisAndSolution,
+      );
     });
   });
 }

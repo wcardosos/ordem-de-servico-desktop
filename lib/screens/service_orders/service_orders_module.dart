@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/service_order_controller.dart';
 import '../../core/deletion_result.dart';
+import '../../core/service_order_labels.dart';
 import '../../core/service_order_status.dart';
+import '../../core/service_order_transitions.dart';
+import '../../core/transition_result.dart';
 import '../../models/customer.dart';
 import '../../models/equipment.dart';
 import '../../models/service_order.dart';
@@ -29,6 +32,14 @@ class ServiceOrdersModule extends StatefulWidget {
     'serviceOrderDeleteCancelButton',
   );
 
+  static const Key confirmStatusChangeButtonKey = Key(
+    'serviceOrderStatusChangeConfirmButton',
+  );
+
+  static const Key cancelStatusChangeButtonKey = Key(
+    'serviceOrderStatusChangeCancelButton',
+  );
+
   static const Key closeBlockedDialogButtonKey = Key(
     'serviceOrderDeleteBlockedCloseButton',
   );
@@ -45,6 +56,9 @@ class ServiceOrdersModule extends StatefulWidget {
   static const String updatedMessage = 'Alterações salvas.';
 
   static const String openedWithoutNumberMessage = 'Ordem de serviço aberta.';
+
+  static String statusChangedMessage(String target) =>
+      'Status alterado para $target.';
 
   static String openedMessage(String number) =>
       'Ordem de serviço $number aberta.';
@@ -309,6 +323,73 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     }
   }
 
+  Future<void> _changeStatus(ServiceOrderStatus target) async {
+    final ServiceOrder? order = _selected;
+    if (order == null) {
+      return;
+    }
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            title: const Text('Alterar status'),
+            content: Text(
+              'Deseja alterar o status da ordem de serviço "${order.number}" '
+              'de ${order.status.label} para ${target.label}?',
+            ),
+            actions: <Widget>[
+              TextButton(
+                key: ServiceOrdersModule.cancelStatusChangeButtonKey,
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                key: ServiceOrdersModule.confirmStatusChangeButtonKey,
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Confirmar'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) {
+      return;
+    }
+    final ServiceOrderController controller = context
+        .read<ServiceOrderController>();
+    setState(() => _busy = true);
+    TransitionResult? result;
+    try {
+      result = await controller.changeStatus(order, target);
+    } on DatabaseAccessException {
+      result = null;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    if (result == null) {
+      _showMessage(ServiceOrderController.statusChangeFailedMessage);
+      return;
+    }
+    if (result != TransitionResult.allowed) {
+      _showMessage(transitionBlockedMessage(result, order.status, target));
+      return;
+    }
+    final DateTime now = DateTime.now();
+    final ServiceOrder changed = controller.orders.firstWhere(
+      (ServiceOrder item) => item.id == order.id,
+      orElse: () => order.withStatus(
+        target,
+        completedAt: target == ServiceOrderStatus.completed
+            ? DateTime(now.year, now.month, now.day)
+            : null,
+      ),
+    );
+    setState(() => _selected = changed);
+    _showMessage(ServiceOrdersModule.statusChangedMessage(target.label));
+  }
+
   @override
   Widget build(BuildContext context) {
     final ServiceOrder? selected = _selected;
@@ -328,6 +409,7 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
           onBack: _returnToList,
           onEdit: _openEdit,
           onDelete: _delete,
+          onChangeStatus: _changeStatus,
         );
       case _ModuleView.editing when selected != null:
         return ServiceOrderEditView(

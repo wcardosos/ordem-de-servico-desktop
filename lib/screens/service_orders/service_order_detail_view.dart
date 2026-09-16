@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/service_order_labels.dart';
+import '../../core/service_order_status.dart';
+import '../../core/service_order_transitions.dart';
 import '../../models/service_order.dart';
 import '../../widgets/section_header.dart';
 
@@ -12,6 +14,7 @@ class ServiceOrderDetailView extends StatelessWidget {
     required this.onBack,
     required this.onEdit,
     required this.onDelete,
+    required this.onChangeStatus,
     this.busy = false,
   });
 
@@ -23,6 +26,12 @@ class ServiceOrderDetailView extends StatelessWidget {
 
   static const Key statusFlowSlotKey = Key('serviceOrderDetailStatusFlowSlot');
 
+  static const Key statusSelectorKey = Key('serviceOrderStatusSelector');
+
+  static const Key changeStatusButtonKey = Key(
+    'serviceOrderChangeStatusButton',
+  );
+
   static const Key partsSlotKey = Key('serviceOrderDetailPartsSlot');
 
   static const Key imageSlotKey = Key('serviceOrderDetailImageSlot');
@@ -30,6 +39,8 @@ class ServiceOrderDetailView extends StatelessWidget {
   static const String notInformed = 'Não informado';
 
   static const String noTechnician = 'Sem responsável';
+
+  static const String closedOrderMessage = 'Esta ordem está encerrada.';
 
   static final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
 
@@ -43,6 +54,8 @@ class ServiceOrderDetailView extends StatelessWidget {
   final VoidCallback onEdit;
 
   final VoidCallback onDelete;
+
+  final ValueChanged<ServiceOrderStatus> onChangeStatus;
 
   final bool busy;
 
@@ -161,7 +174,12 @@ class ServiceOrderDetailView extends StatelessWidget {
                       label: 'Solução',
                       value: _orPlaceholder(order.solution, notInformed),
                     ),
-                    const SizedBox(key: statusFlowSlotKey),
+                    _StatusFlow(
+                      key: statusFlowSlotKey,
+                      order: order,
+                      busy: busy,
+                      onChangeStatus: onChangeStatus,
+                    ),
                     const SizedBox(key: partsSlotKey),
                     const SizedBox(key: imageSlotKey),
                   ],
@@ -171,6 +189,91 @@ class ServiceOrderDetailView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _StatusFlow extends StatefulWidget {
+  const _StatusFlow({
+    super.key,
+    required this.order,
+    required this.busy,
+    required this.onChangeStatus,
+  });
+
+  final ServiceOrder order;
+
+  final bool busy;
+
+  final ValueChanged<ServiceOrderStatus> onChangeStatus;
+
+  @override
+  State<_StatusFlow> createState() => _StatusFlowState();
+}
+
+class _StatusFlowState extends State<_StatusFlow> {
+  ServiceOrderStatus? _target;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<ServiceOrderStatus> targets =
+        validTransitions[widget.order.status] ?? const <ServiceOrderStatus>[];
+    final ServiceOrderStatus? target = targets.contains(_target)
+        ? _target
+        : null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Mudança de status', style: theme.textTheme.labelMedium),
+          const SizedBox(height: 8),
+          if (targets.isEmpty)
+            Text(
+              ServiceOrderDetailView.closedOrderMessage,
+              style: theme.textTheme.bodyLarge,
+            )
+          else
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                SizedBox(
+                  key: ServiceOrderDetailView.statusSelectorKey,
+                  width: 280,
+                  child: DropdownButton<ServiceOrderStatus>(
+                    isExpanded: true,
+                    value: target,
+                    hint: const Text('Selecione o novo status'),
+                    items: targets
+                        .map(
+                          (ServiceOrderStatus status) =>
+                              DropdownMenuItem<ServiceOrderStatus>(
+                                value: status,
+                                child: Text(status.label),
+                              ),
+                        )
+                        .toList(),
+                    onChanged: widget.busy
+                        ? null
+                        : (ServiceOrderStatus? value) =>
+                              setState(() => _target = value),
+                  ),
+                ),
+                FilledButton.icon(
+                  key: ServiceOrderDetailView.changeStatusButtonKey,
+                  onPressed: widget.busy || target == null
+                      ? null
+                      : () => widget.onChangeStatus(target),
+                  icon: const Icon(Icons.sync_alt),
+                  label: const Text('Alterar status'),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }

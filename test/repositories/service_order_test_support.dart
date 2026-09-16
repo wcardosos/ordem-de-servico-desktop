@@ -47,6 +47,8 @@ ServiceOrder newOrder({
   ServiceOrderStatus status = ServiceOrderStatus.open,
   DateTime? openedAt,
   DateTime? dueDate,
+  String? diagnosis,
+  String? solution,
 }) {
   return ServiceOrder(
     id: id,
@@ -59,5 +61,7 @@ ServiceOrder newOrder({
     status: status,
     openedAt: openedAt ?? DateTime(2026, 9, 10),
     dueDate: dueDate ?? DateTime(2026, 9, 30),
+    diagnosis: diagnosis,
+    solution: solution,
   );
 }

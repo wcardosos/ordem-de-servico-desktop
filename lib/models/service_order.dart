@@ -1,5 +1,7 @@
 import '../core/priority.dart';
 import '../core/service_order_status.dart';
+import '../core/service_order_transitions.dart';
+import '../core/transition_result.dart';
 
 class ServiceOrder {
   const ServiceOrder({
@@ -89,6 +91,46 @@ class ServiceOrder {
         status != ServiceOrderStatus.cancelled &&
         dueDate.isBefore(DateTime(now.year, now.month, now.day));
   }
+
+  TransitionResult validateTransitionTo(ServiceOrderStatus target) {
+    if (!(validTransitions[status]?.contains(target) ?? false)) {
+      return TransitionResult.invalidTarget;
+    }
+    if (target == ServiceOrderStatus.assigned && technicianId == null) {
+      return TransitionResult.technicianNotSet;
+    }
+    if (target == ServiceOrderStatus.completed &&
+        _isBlank(diagnosis) &&
+        _isBlank(solution)) {
+      return TransitionResult.missingDiagnosisAndSolution;
+    }
+    return TransitionResult.allowed;
+  }
+
+  ServiceOrder withStatus(ServiceOrderStatus target, {DateTime? completedAt}) {
+    return ServiceOrder(
+      id: id,
+      number: number,
+      customerId: customerId,
+      equipmentId: equipmentId,
+      technicianId: technicianId,
+      problemDescription: problemDescription,
+      priority: priority,
+      status: target,
+      openedAt: openedAt,
+      dueDate: dueDate,
+      completedAt: completedAt ?? this.completedAt,
+      diagnosis: diagnosis,
+      solution: solution,
+      laborCost: laborCost,
+      imagePath: imagePath,
+      customerName: customerName,
+      equipmentDescription: equipmentDescription,
+      technicianName: technicianName,
+    );
+  }
+
+  static bool _isBlank(String? value) => value == null || value.trim().isEmpty;
 
   Map<String, Object?> toMap() {
     final DateTime? completed = completedAt;
