@@ -157,6 +157,11 @@ CREATE TABLE part_items (
     for (final Map<String, Object?> technician in seedTechnicians) {
       batch.insert('technicians', technician);
     }
+    for (final Map<String, Object?> order in seedServiceOrders(
+      DateTime.now(),
+    )) {
+      batch.insert('service_orders', order);
+    }
     await batch.commit(noResult: true);
   }
 }

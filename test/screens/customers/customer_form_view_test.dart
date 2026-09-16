@@ -67,6 +67,7 @@ void main() {
     'saves a new customer in the main section and returns to the list',
     (WidgetTester tester) async {
       await withDatabase(tester, (database) async {
+        await database.delete('service_orders');
         await database.delete('equipment');
         await database.delete('customers');
       });
@@ -115,6 +116,7 @@ void main() {
   ) async {
     int customerId = 0;
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('equipment');
       await database.delete('customers');
       customerId = await insertCustomer(
@@ -165,6 +167,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('equipment');
       await database.delete('customers');
       await insertCustomer(database, name: validName, document: storedDocument);
@@ -181,6 +184,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('equipment');
       await database.delete('customers');
     });
@@ -222,6 +226,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('equipment');
       await database.delete('customers');
     });

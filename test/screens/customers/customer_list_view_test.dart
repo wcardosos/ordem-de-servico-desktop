@@ -15,6 +15,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('equipment');
       await database.delete('customers');
       await insertCustomer(
@@ -56,6 +57,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('equipment');
       await database.delete('customers');
     });
@@ -71,6 +73,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('equipment');
       await database.delete('customers');
       await insertCustomer(

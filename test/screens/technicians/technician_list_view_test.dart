@@ -23,6 +23,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('technicians');
       await insertTechnician(
         database,
@@ -69,7 +70,10 @@ void main() {
   testWidgets('shows empty state when no technicians exist', (
     WidgetTester tester,
   ) async {
-    await withDatabase(tester, (database) => database.delete('technicians'));
+    await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
+      await database.delete('technicians');
+    });
 
     await pumpTechniciansModule(tester);
 
@@ -82,6 +86,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('technicians');
       await insertTechnician(
         database,
@@ -129,6 +134,7 @@ void main() {
   ) async {
     int? rafaelId;
     await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
       await database.delete('technicians');
       await insertTechnician(database, name: 'Sérgio Lima', active: false);
       rafaelId = await insertTechnician(database, name: 'Rafael Duarte');

@@ -1,6 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ordem_de_servico/core/priority.dart';
+import 'package:ordem_de_servico/core/service_order_status.dart';
+import 'package:ordem_de_servico/models/service_order.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -111,10 +114,58 @@ void main() {
       isNotEmpty,
     );
 
-    for (final String table in <String>['service_orders', 'part_items']) {
-      expect(await database.query(table), isEmpty, reason: table);
-    }
+    expect(await database.query('service_orders'), hasLength(10));
+    expect(await database.query('part_items'), isEmpty);
   });
+
+  test(
+    'seeds ten demo service orders across statuses and priorities',
+    () async {
+      final Database database = await DatabaseHelper.instance.database;
+
+      final List<ServiceOrder> orders = (await database.query('service_orders'))
+          .map(ServiceOrder.fromMap)
+          .toList();
+
+      expect(orders, hasLength(10));
+      expect(
+        orders.map((ServiceOrder order) => order.status).toSet(),
+        ServiceOrderStatus.values.toSet(),
+      );
+      expect(
+        orders.map((ServiceOrder order) => order.priority).toSet(),
+        Priority.values.toSet(),
+      );
+      expect(
+        orders.where((ServiceOrder order) => order.isOverdue).length,
+        greaterThanOrEqualTo(2),
+      );
+      expect(
+        orders
+            .where((ServiceOrder order) => order.priority == Priority.urgent)
+            .length,
+        greaterThanOrEqualTo(2),
+      );
+      expect(
+        orders.map((ServiceOrder order) => order.number).toSet(),
+        hasLength(10),
+      );
+      for (final ServiceOrder order in orders) {
+        expect(
+          RegExp(r'^OS-\d{4}-\d{4}$').hasMatch(order.number),
+          isTrue,
+          reason: order.number,
+        );
+        expect(order.number.substring(3, 7), '${order.openedAt.year}');
+        final List<Map<String, Object?>> equipment = await database.query(
+          'equipment',
+          where: 'id = ? AND customer_id = ?',
+          whereArgs: <Object?>[order.equipmentId, order.customerId],
+        );
+        expect(equipment, hasLength(1), reason: order.number);
+      }
+    },
+  );
 
   test('reopens the existing database without recreating it', () async {
     final Database firstRun = await DatabaseHelper.instance.database;

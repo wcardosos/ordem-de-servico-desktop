@@ -3,10 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../controllers/customer_controller.dart';
 import '../controllers/equipment_controller.dart';
+import '../controllers/service_order_controller.dart';
 import '../controllers/technician_controller.dart';
 import '../widgets/app_module.dart';
 import 'customers/customers_module.dart';
 import 'equipment/equipment_module.dart';
+import 'service_orders/service_orders_module.dart';
 import 'technicians/technicians_module.dart';
 
 final List<AppModule> appModules = <AppModule>[
@@ -35,6 +37,15 @@ final List<AppModule> appModules = <AppModule>[
         ChangeNotifierProvider<EquipmentController>(
           create: (BuildContext context) => EquipmentController(),
           child: const EquipmentModule(),
+        ),
+  ),
+  AppModule(
+    label: 'Ordens de serviço',
+    icon: Icons.assignment_outlined,
+    builder: (BuildContext context) =>
+        ChangeNotifierProvider<ServiceOrderController>(
+          create: (BuildContext context) => ServiceOrderController(),
+          child: const ServiceOrdersModule(),
         ),
   ),
 ];

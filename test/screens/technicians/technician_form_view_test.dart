@@ -61,7 +61,10 @@ void main() {
   testWidgets('saves a new technician as active and returns to the list', (
     WidgetTester tester,
   ) async {
-    await withDatabase(tester, (database) => database.delete('technicians'));
+    await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
+      await database.delete('technicians');
+    });
     await pumpTechniciansModule(tester);
 
     await openNewTechnicianForm(tester);
@@ -115,6 +118,7 @@ void main() {
       int sergioId = 0;
       List<Map<String, Object?>> ordersBefore = <Map<String, Object?>>[];
       await withDatabase(tester, (database) async {
+        await database.delete('service_orders');
         await database.delete('technicians');
         sergioId = await insertTechnician(
           database,
@@ -186,7 +190,10 @@ void main() {
   testWidgets('cancelling the form returns to the list without saving', (
     WidgetTester tester,
   ) async {
-    await withDatabase(tester, (database) => database.delete('technicians'));
+    await withDatabase(tester, (database) async {
+      await database.delete('service_orders');
+      await database.delete('technicians');
+    });
     await pumpTechniciansModule(tester);
     await openNewTechnicianForm(tester);
     await fillValidData(tester);

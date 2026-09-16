@@ -4,6 +4,7 @@ import 'package:ordem_de_servico/screens/app_shell.dart';
 import 'package:ordem_de_servico/screens/customers/customer_list_view.dart';
 import 'package:ordem_de_servico/screens/equipment/equipment_list_view.dart';
 import 'package:ordem_de_servico/screens/login_screen.dart';
+import 'package:ordem_de_servico/screens/service_orders/service_order_list_view.dart';
 import 'package:ordem_de_servico/screens/technicians/technician_list_view.dart';
 import 'package:ordem_de_servico/widgets/app_module.dart';
 import 'package:ordem_de_servico/widgets/side_navbar.dart';
@@ -114,6 +115,29 @@ void main() {
     );
     expectNoDialogs();
   });
+
+  testWidgets(
+    'shows the service orders module in the sidebar and opens its list',
+    (WidgetTester tester) async {
+      await pumpShell(tester);
+      final Finder item = find.byKey(SideNavbar.itemKey('Ordens de serviço'));
+      expect(item, findsOneWidget);
+
+      await tester.runAsync(() async {
+        await tester.tap(item);
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(tester.widget<ListTile>(item).selected, isTrue);
+      expect(find.byType(CustomerListView), findsNothing);
+      expect(find.byType(ServiceOrderListView), findsOneWidget);
+      expect(find.byKey(ServiceOrderListView.addButtonKey), findsOneWidget);
+      expectNoDialogs();
+    },
+  );
 
   testWidgets('selecting a sidebar item swaps the main section content', (
     WidgetTester tester,

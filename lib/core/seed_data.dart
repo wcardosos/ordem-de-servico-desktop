@@ -1,3 +1,7 @@
+import '../models/service_order.dart';
+import 'priority.dart';
+import 'service_order_status.dart';
+
 const List<Map<String, Object?>> seedCustomers = <Map<String, Object?>>[
   <String, Object?>{
     'name': 'Ana Ribeiro',
@@ -90,3 +94,136 @@ const List<Map<String, Object?>> seedTechnicians = <Map<String, Object?>>[
     'active': 0,
   },
 ];
+
+List<Map<String, Object?>> seedServiceOrders(DateTime now) {
+  final DateTime today = DateTime(now.year, now.month, now.day);
+  DateTime day(int offset) =>
+      DateTime(today.year, today.month, today.day + offset);
+
+  final List<ServiceOrder> orders = <ServiceOrder>[
+    ServiceOrder(
+      number: '',
+      customerId: 3,
+      equipmentId: 5,
+      technicianId: 2,
+      problemDescription: 'Nobreak emite bipes e não segura carga',
+      priority: Priority.low,
+      status: ServiceOrderStatus.completed,
+      openedAt: day(-30),
+      dueDate: day(-20),
+      completedAt: day(-22),
+      diagnosis: 'Bateria interna sem capacidade',
+      solution: 'Bateria substituída e autonomia testada',
+    ),
+    ServiceOrder(
+      number: '',
+      customerId: 1,
+      equipmentId: 1,
+      problemDescription: 'Cliente desistiu da manutenção preventiva',
+      priority: Priority.medium,
+      status: ServiceOrderStatus.cancelled,
+      openedAt: day(-25),
+      dueDate: day(-15),
+    ),
+    ServiceOrder(
+      number: '',
+      customerId: 2,
+      equipmentId: 3,
+      technicianId: 1,
+      problemDescription: 'Tela piscando e desligamentos aleatórios',
+      priority: Priority.urgent,
+      status: ServiceOrderStatus.completed,
+      openedAt: day(-15),
+      dueDate: day(-12),
+      completedAt: day(-13),
+      diagnosis: 'Cabo flat da tela danificado',
+      solution: 'Cabo flat substituído',
+    ),
+    ServiceOrder(
+      number: '',
+      customerId: 1,
+      equipmentId: 2,
+      technicianId: 1,
+      problemDescription: 'Atolamento de papel constante',
+      priority: Priority.medium,
+      status: ServiceOrderStatus.awaitingPart,
+      openedAt: day(-12),
+      dueDate: day(-1),
+      diagnosis: 'Rolete de tração gasto',
+    ),
+    ServiceOrder(
+      number: '',
+      customerId: 2,
+      equipmentId: 3,
+      technicianId: 1,
+      problemDescription: 'Não reconhece o carregador',
+      priority: Priority.high,
+      status: ServiceOrderStatus.assigned,
+      openedAt: day(-10),
+      dueDate: day(-3),
+    ),
+    ServiceOrder(
+      number: '',
+      customerId: 2,
+      equipmentId: 4,
+      technicianId: 2,
+      problemDescription: 'Água saindo em temperatura ambiente',
+      priority: Priority.high,
+      status: ServiceOrderStatus.inProgress,
+      openedAt: day(-6),
+      dueDate: day(3),
+    ),
+    ServiceOrder(
+      number: '',
+      customerId: 1,
+      equipmentId: 1,
+      problemDescription: 'Não está gelando',
+      priority: Priority.urgent,
+      status: ServiceOrderStatus.open,
+      openedAt: day(-5),
+      dueDate: day(-2),
+    ),
+    ServiceOrder(
+      number: '',
+      customerId: 1,
+      equipmentId: 1,
+      technicianId: 2,
+      problemDescription: 'Barulho excessivo na unidade externa',
+      priority: Priority.medium,
+      status: ServiceOrderStatus.assigned,
+      openedAt: day(-4),
+      dueDate: day(5),
+    ),
+    ServiceOrder(
+      number: '',
+      customerId: 3,
+      equipmentId: 5,
+      technicianId: 1,
+      problemDescription: 'Desliga ao alternar para a bateria',
+      priority: Priority.urgent,
+      status: ServiceOrderStatus.inProgress,
+      openedAt: day(-3),
+      dueDate: day(1),
+    ),
+    ServiceOrder(
+      number: '',
+      customerId: 3,
+      equipmentId: 5,
+      problemDescription: 'Revisão preventiva anual',
+      priority: Priority.low,
+      status: ServiceOrderStatus.open,
+      openedAt: day(-1),
+      dueDate: day(10),
+    ),
+  ];
+
+  final Map<int, int> sequenceByYear = <int, int>{};
+  return orders.map((ServiceOrder order) {
+    final int year = order.openedAt.year;
+    final int sequence = (sequenceByYear[year] ?? 0) + 1;
+    sequenceByYear[year] = sequence;
+    return order.toMap()
+      ..remove('id')
+      ..['number'] = 'OS-$year-${sequence.toString().padLeft(4, '0')}';
+  }).toList();
+}
