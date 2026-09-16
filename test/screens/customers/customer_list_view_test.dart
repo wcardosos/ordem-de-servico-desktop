@@ -15,6 +15,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('equipment');
       await database.delete('customers');
       await insertCustomer(
         database,
@@ -54,7 +55,10 @@ void main() {
   testWidgets('shows empty state when no customers exist', (
     WidgetTester tester,
   ) async {
-    await withDatabase(tester, (database) => database.delete('customers'));
+    await withDatabase(tester, (database) async {
+      await database.delete('equipment');
+      await database.delete('customers');
+    });
 
     await pumpCustomersModule(tester);
 
@@ -67,6 +71,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('equipment');
       await database.delete('customers');
       await insertCustomer(
         database,

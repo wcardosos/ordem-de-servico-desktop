@@ -151,6 +151,9 @@ CREATE TABLE part_items (
     for (final Map<String, Object?> customer in seedCustomers) {
       batch.insert('customers', customer);
     }
+    for (final Map<String, Object?> equipment in seedEquipment) {
+      batch.insert('equipment', equipment);
+    }
     for (final Map<String, Object?> technician in seedTechnicians) {
       batch.insert('technicians', technician);
     }

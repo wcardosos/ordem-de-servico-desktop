@@ -19,6 +19,7 @@ void main() {
   }) async {
     final Map<String, int> ids = <String, int>{};
     await withDatabase(tester, (database) async {
+      await database.delete('equipment');
       await database.delete('customers');
       ids['Ana Ribeiro'] = await insertCustomer(
         database,

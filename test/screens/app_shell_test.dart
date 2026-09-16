@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/screens/app_shell.dart';
 import 'package:ordem_de_servico/screens/customers/customer_list_view.dart';
+import 'package:ordem_de_servico/screens/equipment/equipment_list_view.dart';
 import 'package:ordem_de_servico/screens/login_screen.dart';
 import 'package:ordem_de_servico/screens/technicians/technician_list_view.dart';
 import 'package:ordem_de_servico/widgets/app_module.dart';
@@ -81,6 +82,38 @@ void main() {
       expectNoDialogs();
     },
   );
+
+  testWidgets('shows the equipment module in the sidebar and opens its list', (
+    WidgetTester tester,
+  ) async {
+    await pumpShell(tester);
+    expect(find.byKey(SideNavbar.itemKey('Equipamentos')), findsOneWidget);
+
+    await tester.runAsync(() async {
+      await tester.tap(find.byKey(SideNavbar.itemKey('Equipamentos')));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    });
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(
+      tester
+          .widget<ListTile>(find.byKey(SideNavbar.itemKey('Equipamentos')))
+          .selected,
+      isTrue,
+    );
+    expect(find.byType(CustomerListView), findsNothing);
+    expect(find.byType(EquipmentListView), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(EquipmentListView.listKey),
+        matching: find.byType(ListTile),
+      ),
+      findsNWidgets(5),
+    );
+    expectNoDialogs();
+  });
 
   testWidgets('selecting a sidebar item swaps the main section content', (
     WidgetTester tester,

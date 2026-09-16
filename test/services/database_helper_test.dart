@@ -86,11 +86,32 @@ void main() {
       isNotEmpty,
     );
 
-    for (final String table in <String>[
+    final List<Map<String, Object?>> equipment = await database.query(
       'equipment',
-      'service_orders',
-      'part_items',
-    ]) {
+    );
+    expect(equipment, hasLength(5));
+    expect(
+      equipment.map((Map<String, Object?> row) => row['customer_id']).toSet(),
+      customers.map((Map<String, Object?> row) => row['id']).toSet(),
+    );
+    expect(
+      equipment.map((Map<String, Object?> row) => row['type']).toSet().length,
+      greaterThan(1),
+    );
+    expect(
+      equipment.where(
+        (Map<String, Object?> row) => <String>[
+          'brand',
+          'model',
+          'serial_number',
+          'asset_tag',
+          'notes',
+        ].every((String column) => row[column] == null),
+      ),
+      isNotEmpty,
+    );
+
+    for (final String table in <String>['service_orders', 'part_items']) {
       expect(await database.query(table), isEmpty, reason: table);
     }
   });

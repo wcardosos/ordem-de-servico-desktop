@@ -66,7 +66,10 @@ void main() {
   testWidgets(
     'saves a new customer in the main section and returns to the list',
     (WidgetTester tester) async {
-      await withDatabase(tester, (database) => database.delete('customers'));
+      await withDatabase(tester, (database) async {
+        await database.delete('equipment');
+        await database.delete('customers');
+      });
       await pumpCustomersModule(tester);
       expect(find.text(validName), findsNothing);
 
@@ -112,6 +115,7 @@ void main() {
   ) async {
     int customerId = 0;
     await withDatabase(tester, (database) async {
+      await database.delete('equipment');
       await database.delete('customers');
       customerId = await insertCustomer(
         database,
@@ -161,6 +165,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('equipment');
       await database.delete('customers');
       await insertCustomer(database, name: validName, document: storedDocument);
     });
@@ -175,7 +180,10 @@ void main() {
   testWidgets('masks document and phone while typing and saves only digits', (
     WidgetTester tester,
   ) async {
-    await withDatabase(tester, (database) => database.delete('customers'));
+    await withDatabase(tester, (database) async {
+      await database.delete('equipment');
+      await database.delete('customers');
+    });
     await pumpCustomersModule(tester);
     await openNewCustomerForm(tester);
     await fillValidData(tester);
@@ -213,7 +221,10 @@ void main() {
   testWidgets('cancelling the form returns to the list without saving', (
     WidgetTester tester,
   ) async {
-    await withDatabase(tester, (database) => database.delete('customers'));
+    await withDatabase(tester, (database) async {
+      await database.delete('equipment');
+      await database.delete('customers');
+    });
     await pumpCustomersModule(tester);
     await openNewCustomerForm(tester);
     await fillValidData(tester);
