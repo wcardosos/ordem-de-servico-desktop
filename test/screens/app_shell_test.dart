@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/screens/app_shell.dart';
 import 'package:ordem_de_servico/screens/customers/customer_list_view.dart';
 import 'package:ordem_de_servico/screens/login_screen.dart';
+import 'package:ordem_de_servico/screens/technicians/technician_list_view.dart';
 import 'package:ordem_de_servico/widgets/app_module.dart';
 import 'package:ordem_de_servico/widgets/side_navbar.dart';
 
@@ -49,6 +50,34 @@ void main() {
       expect(find.byKey(SideNavbar.signOutButtonKey), findsOneWidget);
       expect(find.byType(CustomerListView), findsOneWidget);
       expect(find.text('Ana Ribeiro'), findsOneWidget);
+      expectNoDialogs();
+    },
+  );
+
+  testWidgets(
+    'shows the technicians module in the sidebar and opens its list',
+    (WidgetTester tester) async {
+      await pumpShell(tester);
+      expect(find.byKey(SideNavbar.itemKey('Técnicos')), findsOneWidget);
+
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(SideNavbar.itemKey('Técnicos')));
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        tester
+            .widget<ListTile>(find.byKey(SideNavbar.itemKey('Técnicos')))
+            .selected,
+        isTrue,
+      );
+      expect(find.byType(CustomerListView), findsNothing);
+      expect(find.byType(TechnicianListView), findsOneWidget);
+      expect(find.text('Bruno Alencar'), findsOneWidget);
+      expect(find.text('Sérgio Lima'), findsOneWidget);
       expectNoDialogs();
     },
   );

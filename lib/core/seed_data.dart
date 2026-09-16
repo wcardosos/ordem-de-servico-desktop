@@ -21,3 +21,24 @@ const List<Map<String, Object?>> seedCustomers = <Map<String, Object?>>[
     'address': 'Rua Minas Gerais, 45, Belo Horizonte - MG',
   },
 ];
+
+const List<Map<String, Object?>> seedTechnicians = <Map<String, Object?>>[
+  <String, Object?>{
+    'name': 'Bruno Alencar',
+    'contact': '83998871122',
+    'specialty': 'Informática',
+    'active': 1,
+  },
+  <String, Object?>{
+    'name': 'Rafael Duarte',
+    'contact': '83997772211',
+    'specialty': 'Refrigeração',
+    'active': 1,
+  },
+  <String, Object?>{
+    'name': 'Sérgio Lima',
+    'contact': '8332214455',
+    'specialty': 'Redes e telefonia',
+    'active': 0,
+  },
+];

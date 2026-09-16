@@ -73,8 +73,20 @@ void main() {
     );
     expect(customers, hasLength(3));
 
-    for (final String table in <String>[
+    final List<Map<String, Object?>> technicians = await database.query(
       'technicians',
+    );
+    expect(technicians, hasLength(3));
+    expect(
+      technicians.map((Map<String, Object?> row) => row['specialty']).toSet(),
+      hasLength(3),
+    );
+    expect(
+      technicians.where((Map<String, Object?> row) => row['active'] == 0),
+      isNotEmpty,
+    );
+
+    for (final String table in <String>[
       'equipment',
       'service_orders',
       'part_items',
