@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/controllers/login_controller.dart';
 import 'package:ordem_de_servico/models/user.dart';
 import 'package:ordem_de_servico/repositories/user_repository.dart';
-import 'package:ordem_de_servico/screens/home_screen.dart';
+import 'package:ordem_de_servico/screens/app_shell.dart';
 import 'package:ordem_de_servico/screens/login_screen.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
 import 'package:path/path.dart' as p;
@@ -75,6 +75,8 @@ void main() {
     await tester.runAsync(() async {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Entrar'));
       await Future<void>.delayed(const Duration(milliseconds: 200));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
     });
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
@@ -92,7 +94,7 @@ void main() {
 
       await signIn(tester, username: 'admin', password: 'admin123');
 
-      expect(find.byType(HomeScreen), findsOneWidget);
+      expect(find.byType(AppShell), findsOneWidget);
       expect(find.byType(LoginScreen), findsNothing);
       final NavigatorState navigator = tester.state(find.byType(Navigator));
       expect(navigator.canPop(), isFalse);
@@ -108,7 +110,7 @@ void main() {
 
     expect(find.text('Usuário ou senha inválidos.'), findsOneWidget);
     expect(find.byType(LoginScreen), findsOneWidget);
-    expect(find.byType(HomeScreen), findsNothing);
+    expect(find.byType(AppShell), findsNothing);
     expect(repository.credentialQueryCount, 1);
     expect(controller.authenticatedUser, isNull);
     await dismissSnackBar(tester);
@@ -122,7 +124,7 @@ void main() {
     expect(find.text('Usuário ou senha inválidos.'), findsOneWidget);
     expect(find.text('Usuário não encontrado.'), findsNothing);
     expect(find.byType(LoginScreen), findsOneWidget);
-    expect(find.byType(HomeScreen), findsNothing);
+    expect(find.byType(AppShell), findsNothing);
     expect(repository.credentialQueryCount, 1);
     await dismissSnackBar(tester);
   });
@@ -136,7 +138,7 @@ void main() {
 
     expect(find.text('Informe o usuário.'), findsOneWidget);
     expect(repository.credentialQueryCount, 0);
-    expect(find.byType(HomeScreen), findsNothing);
+    expect(find.byType(AppShell), findsNothing);
     expect(
       File(p.join(supportDirectory.path, 'ordem_servico.db')).existsSync(),
       isFalse,
@@ -152,7 +154,7 @@ void main() {
 
     expect(find.text('Informe a senha.'), findsOneWidget);
     expect(repository.credentialQueryCount, 0);
-    expect(find.byType(HomeScreen), findsNothing);
+    expect(find.byType(AppShell), findsNothing);
     expect(
       File(p.join(supportDirectory.path, 'ordem_servico.db')).existsSync(),
       isFalse,
@@ -169,7 +171,7 @@ void main() {
     expect(find.text('Informe o usuário.'), findsOneWidget);
     expect(find.text('Informe a senha.'), findsOneWidget);
     expect(repository.credentialQueryCount, 0);
-    expect(find.byType(HomeScreen), findsNothing);
+    expect(find.byType(AppShell), findsNothing);
     expect(
       File(p.join(supportDirectory.path, 'ordem_servico.db')).existsSync(),
       isFalse,
@@ -200,7 +202,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(LoginScreen), findsOneWidget);
-    expect(find.byType(HomeScreen), findsNothing);
+    expect(find.byType(AppShell), findsNothing);
     expect(find.textContaining('Exception'), findsNothing);
     expect(find.textContaining('sqlite'), findsNothing);
     expect(find.textContaining('#0'), findsNothing);

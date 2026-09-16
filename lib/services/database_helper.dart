@@ -4,6 +4,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../core/seed_data.dart';
+
 class DatabaseHelper {
   DatabaseHelper._internal();
 
@@ -146,6 +148,9 @@ CREATE TABLE part_items (
       'username': 'admin',
       'password': 'admin123',
     });
+    for (final Map<String, Object?> customer in seedCustomers) {
+      batch.insert('customers', customer);
+    }
     await batch.commit(noResult: true);
   }
 }

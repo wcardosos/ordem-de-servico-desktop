@@ -68,8 +68,12 @@ void main() {
     expect(users.single['username'], 'admin');
     expect(users.single['password'], 'admin123');
 
-    for (final String table in <String>[
+    final List<Map<String, Object?>> customers = await database.query(
       'customers',
+    );
+    expect(customers, hasLength(3));
+
+    for (final String table in <String>[
       'technicians',
       'equipment',
       'service_orders',
