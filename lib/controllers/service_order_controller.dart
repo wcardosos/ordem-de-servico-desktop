@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 
 import '../core/deletion_result.dart';
 import '../core/service_order_status.dart';
@@ -8,13 +9,16 @@ import '../models/service_order.dart';
 import '../repositories/part_item_repository.dart';
 import '../repositories/service_order_repository.dart';
 import '../services/database_helper.dart';
+import '../services/image_service.dart';
 
 class ServiceOrderController extends ChangeNotifier {
   ServiceOrderController({
     ServiceOrderRepository? repository,
     PartItemRepository? partItemRepository,
+    ImageService? imageService,
   }) : _repository = repository ?? ServiceOrderRepository(),
-       _partItemRepository = partItemRepository ?? PartItemRepository();
+       _partItemRepository = partItemRepository ?? PartItemRepository(),
+       _imageService = imageService ?? ImageService();
 
   static const String unavailableMessage =
       'Não foi possível carregar as ordens de serviço.';
@@ -36,6 +40,15 @@ class ServiceOrderController extends ChangeNotifier {
 
   static const String notFoundMessage = 'Ordem de serviço não encontrada.';
 
+  static const String unacceptedImageMessage =
+      'Selecione um arquivo JPG ou PNG.';
+
+  static const String attachImageFailedMessage =
+      'Não foi possível anexar a imagem. Tente novamente.';
+
+  static const String removeImageFailedMessage =
+      'Não foi possível remover a imagem. Tente novamente.';
+
   static const String partItemsUnavailableMessage =
       'Não foi possível carregar as peças da ordem de serviço.';
 
@@ -48,6 +61,8 @@ class ServiceOrderController extends ChangeNotifier {
   final ServiceOrderRepository _repository;
 
   final PartItemRepository _partItemRepository;
+
+  final ImageService _imageService;
 
   List<ServiceOrder> _orders = <ServiceOrder>[];
 
@@ -173,6 +188,59 @@ class ServiceOrderController extends ChangeNotifier {
     return _write(() => _repository.update(_withLaborCost(order, laborCost)));
   }
 
+  Future<bool> attachImage(ServiceOrder order, String sourcePath) async {
+    if (!_hasAcceptedExtension(sourcePath)) {
+      _error = unacceptedImageMessage;
+      notifyListeners();
+      return false;
+    }
+    String relativePath;
+    try {
+      relativePath = await _imageService.save(sourcePath, order.number);
+    } catch (_) {
+      _error = attachImageFailedMessage;
+      notifyListeners();
+      return false;
+    }
+    final bool saved = await _write(
+      () => _repository.update(_withImagePath(order, relativePath)),
+    );
+    if (!saved) {
+      await _discardImageFile(relativePath);
+    }
+    return saved;
+  }
+
+  Future<bool> removeImage(ServiceOrder order) async {
+    final String? relativePath = order.imagePath;
+    final bool saved = await _write(
+      () => _repository.update(_withImagePath(order, null)),
+    );
+    if (!saved) {
+      _error = removeImageFailedMessage;
+      notifyListeners();
+      return false;
+    }
+    if (relativePath != null) {
+      await _discardImageFile(relativePath);
+    }
+    return true;
+  }
+
+  Future<void> _discardImageFile(String relativePath) async {
+    try {
+      await _imageService.remove(relativePath);
+    } catch (_) {
+      return;
+    }
+  }
+
+  static bool _hasAcceptedExtension(String sourcePath) {
+    final String extension = p.extension(sourcePath).toLowerCase();
+    return extension.length > 1 &&
+        ImageService.acceptedExtensions.contains(extension.substring(1));
+  }
+
   int? _serviceOrderIdOfPartItem(int itemId) {
     for (final PartItem item in _partItems) {
       if (item.id == itemId) {
@@ -180,6 +248,30 @@ class ServiceOrderController extends ChangeNotifier {
       }
     }
     return null;
+  }
+
+  static ServiceOrder _withImagePath(ServiceOrder order, String? imagePath) {
+    return ServiceOrder(
+      id: order.id,
+      number: order.number,
+      customerId: order.customerId,
+      equipmentId: order.equipmentId,
+      technicianId: order.technicianId,
+      problemDescription: order.problemDescription,
+      priority: order.priority,
+      status: order.status,
+      openedAt: order.openedAt,
+      dueDate: order.dueDate,
+      completedAt: order.completedAt,
+      diagnosis: order.diagnosis,
+      solution: order.solution,
+      laborCost: order.laborCost,
+      imagePath: imagePath,
+      partItems: order.partItems,
+      customerName: order.customerName,
+      equipmentDescription: order.equipmentDescription,
+      technicianName: order.technicianName,
+    );
   }
 
   static ServiceOrder _withLaborCost(ServiceOrder order, double laborCost) {

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -21,6 +23,10 @@ class ServiceOrderDetailView extends StatelessWidget {
     required this.onAddPartItem,
     required this.onRemovePartItem,
     required this.onSaveLaborCost,
+    required this.onAttachImage,
+    required this.onRemoveImage,
+    this.imagePath,
+    this.imageMissing = false,
     this.busy = false,
   });
 
@@ -80,6 +86,14 @@ class ServiceOrderDetailView extends StatelessWidget {
 
   static const Key imageSlotKey = Key('serviceOrderDetailImageSlot');
 
+  static const Key attachImageButtonKey = Key('serviceOrderAttachImageButton');
+
+  static const Key removeImageButtonKey = Key('serviceOrderRemoveImageButton');
+
+  static const String imageMissingMessage = 'Imagem não encontrada.';
+
+  static const String noImageMessage = 'Nenhuma imagem anexada.';
+
   static const String notInformed = 'Não informado';
 
   static const String noTechnician = 'Sem responsável';
@@ -108,6 +122,14 @@ class ServiceOrderDetailView extends StatelessWidget {
   final Future<void> Function(PartItem item) onRemovePartItem;
 
   final Future<bool> Function(double laborCost) onSaveLaborCost;
+
+  final VoidCallback onAttachImage;
+
+  final VoidCallback onRemoveImage;
+
+  final String? imagePath;
+
+  final bool imageMissing;
 
   final bool busy;
 
@@ -240,7 +262,15 @@ class ServiceOrderDetailView extends StatelessWidget {
                       onRemovePartItem: onRemovePartItem,
                       onSaveLaborCost: onSaveLaborCost,
                     ),
-                    const SizedBox(key: imageSlotKey),
+                    _ImageSection(
+                      key: imageSlotKey,
+                      imagePath: imagePath,
+                      imageMissing: imageMissing,
+                      editable: _acceptsValueChanges(order.status),
+                      busy: busy,
+                      onAttachImage: onAttachImage,
+                      onRemoveImage: onRemoveImage,
+                    ),
                   ],
                 ),
               ),
@@ -639,6 +669,88 @@ class _PartsSectionState extends State<_PartsSection> {
             value: formatCurrency(order.totalAmount),
             emphasized: true,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImageSection extends StatelessWidget {
+  const _ImageSection({
+    super.key,
+    required this.imagePath,
+    required this.imageMissing,
+    required this.editable,
+    required this.busy,
+    required this.onAttachImage,
+    required this.onRemoveImage,
+  });
+
+  final String? imagePath;
+
+  final bool imageMissing;
+
+  final bool editable;
+
+  final bool busy;
+
+  final VoidCallback onAttachImage;
+
+  final VoidCallback onRemoveImage;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String? path = imagePath;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Imagem da evidência', style: theme.textTheme.labelMedium),
+          const SizedBox(height: 8),
+          if (path == null)
+            Text(
+              imageMissing
+                  ? ServiceOrderDetailView.imageMissingMessage
+                  : ServiceOrderDetailView.noImageMessage,
+              style: theme.textTheme.bodyLarge,
+            )
+          else
+            Image.file(
+              File(path),
+              height: 240,
+              fit: BoxFit.contain,
+              alignment: Alignment.centerLeft,
+              errorBuilder:
+                  (
+                    BuildContext context,
+                    Object error,
+                    StackTrace? stackTrace,
+                  ) => const Icon(Icons.broken_image_outlined, size: 48),
+            ),
+          if (editable) ...<Widget>[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: <Widget>[
+                OutlinedButton.icon(
+                  key: ServiceOrderDetailView.attachImageButtonKey,
+                  onPressed: busy ? null : onAttachImage,
+                  icon: const Icon(Icons.image_outlined),
+                  label: const Text('Anexar imagem'),
+                ),
+                if (path != null || imageMissing)
+                  OutlinedButton.icon(
+                    key: ServiceOrderDetailView.removeImageButtonKey,
+                    onPressed: busy ? null : onRemoveImage,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Remover imagem'),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );

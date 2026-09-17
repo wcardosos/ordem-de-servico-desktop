@@ -17,13 +17,15 @@ import '../../repositories/equipment_repository.dart';
 import '../../repositories/service_order_repository.dart';
 import '../../repositories/technician_repository.dart';
 import '../../services/database_helper.dart';
+import '../../services/image_file_picker.dart';
+import '../../services/image_service.dart';
 import 'service_order_detail_view.dart';
 import 'service_order_edit_view.dart';
 import 'service_order_form_view.dart';
 import 'service_order_list_view.dart';
 
 class ServiceOrdersModule extends StatefulWidget {
-  const ServiceOrdersModule({super.key});
+  const ServiceOrdersModule({super.key, this.pickImage = pickImageFile});
 
   static const Key confirmDeleteButtonKey = Key(
     'serviceOrderDeleteConfirmButton',
@@ -49,6 +51,14 @@ class ServiceOrdersModule extends StatefulWidget {
     'serviceOrderPartItemRemoveConfirmButton',
   );
 
+  static const Key confirmRemoveImageButtonKey = Key(
+    'serviceOrderImageRemoveConfirmButton',
+  );
+
+  static const Key cancelRemoveImageButtonKey = Key(
+    'serviceOrderImageRemoveCancelButton',
+  );
+
   static const Key cancelRemovePartItemButtonKey = Key(
     'serviceOrderPartItemRemoveCancelButton',
   );
@@ -72,11 +82,17 @@ class ServiceOrdersModule extends StatefulWidget {
 
   static const String laborCostSavedMessage = 'Mão de obra salva.';
 
+  static const String imageAttachedMessage = 'Imagem anexada.';
+
+  static const String imageRemovedMessage = 'Imagem removida.';
+
   static String statusChangedMessage(String target) =>
       'Status alterado para $target.';
 
   static String openedMessage(String number) =>
       'Ordem de serviço $number aberta.';
+
+  final ImageFilePicker pickImage;
 
   @override
   State<ServiceOrdersModule> createState() => _ServiceOrdersModuleState();
@@ -94,9 +110,15 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
   final ServiceOrderRepository _serviceOrderRepository =
       ServiceOrderRepository();
 
+  final ImageService _imageService = ImageService();
+
   _ModuleView _view = _ModuleView.list;
 
   bool _busy = false;
+
+  String? _imagePath;
+
+  bool _imageMissing = false;
 
   List<Customer> _customers = <Customer>[];
 
@@ -255,11 +277,138 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     if (!mounted) {
       return;
     }
+    await _resolveImage(order);
+    if (!mounted) {
+      return;
+    }
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     setState(() {
       _selected = _withPartItems(order, controller.partItems);
       _view = _ModuleView.detail;
     });
+  }
+
+  Future<void> _resolveImage(ServiceOrder order) async {
+    final String? relativePath = order.imagePath;
+    if (relativePath == null) {
+      _imagePath = null;
+      _imageMissing = false;
+      return;
+    }
+    bool found = false;
+    String? resolved;
+    try {
+      found = await _imageService.exists(relativePath);
+      if (found) {
+        resolved = await _imageService.absolutePath(relativePath);
+      }
+    } catch (_) {
+      found = false;
+      resolved = null;
+    }
+    _imagePath = resolved;
+    _imageMissing = !found;
+  }
+
+  Future<void> _attachImage() async {
+    final ServiceOrder? order = _selected;
+    if (order == null) {
+      return;
+    }
+    final ServiceOrderController controller = context
+        .read<ServiceOrderController>();
+    final String? sourcePath = await widget.pickImage();
+    if (sourcePath == null || !mounted) {
+      return;
+    }
+    setState(() => _busy = true);
+    final bool attached = await controller.attachImage(order, sourcePath);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    if (!attached) {
+      _showMessage(
+        controller.error ?? ServiceOrderController.attachImageFailedMessage,
+      );
+      return;
+    }
+    await _refreshSelectedImage(controller, order);
+    if (!mounted) {
+      return;
+    }
+    _showMessage(ServiceOrdersModule.imageAttachedMessage);
+  }
+
+  Future<void> _removeImage() async {
+    final ServiceOrder? order = _selected;
+    if (order == null) {
+      return;
+    }
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            title: const Text('Remover imagem'),
+            content: Text(
+              'Deseja remover a imagem da ordem de serviço "${order.number}"?',
+            ),
+            actions: <Widget>[
+              TextButton(
+                key: ServiceOrdersModule.cancelRemoveImageButtonKey,
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                key: ServiceOrdersModule.confirmRemoveImageButtonKey,
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Remover'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) {
+      return;
+    }
+    final ServiceOrderController controller = context
+        .read<ServiceOrderController>();
+    setState(() => _busy = true);
+    final bool removed = await controller.removeImage(order);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    if (!removed) {
+      _showMessage(
+        controller.error ?? ServiceOrderController.removeImageFailedMessage,
+      );
+      return;
+    }
+    await _refreshSelectedImage(controller, order);
+    if (!mounted) {
+      return;
+    }
+    _showMessage(ServiceOrdersModule.imageRemovedMessage);
+  }
+
+  Future<void> _refreshSelectedImage(
+    ServiceOrderController controller,
+    ServiceOrder order,
+  ) async {
+    final ServiceOrder refreshed = controller.orders.firstWhere(
+      (ServiceOrder item) => item.id == order.id,
+      orElse: () => order,
+    );
+    final ServiceOrder updated = _withPartItems(
+      refreshed,
+      controller.partItems,
+    );
+    await _resolveImage(updated);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _selected = updated);
   }
 
   void _refreshSelectedPartItems(ServiceOrderController controller) {
@@ -565,6 +714,10 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
           onAddPartItem: _addPartItem,
           onRemovePartItem: _removePartItem,
           onSaveLaborCost: _saveLaborCost,
+          onAttachImage: _attachImage,
+          onRemoveImage: _removeImage,
+          imagePath: _imagePath,
+          imageMissing: _imageMissing,
         );
       case _ModuleView.editing when selected != null:
         return ServiceOrderEditView(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/controllers/service_order_controller.dart';
 import 'package:ordem_de_servico/screens/service_orders/service_orders_module.dart';
+import 'package:ordem_de_servico/services/image_file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -63,6 +64,7 @@ Future<int> insertServiceOrder(
   String? completedAt,
   String? diagnosis,
   String? solution,
+  String? imagePath,
 }) {
   return database.insert('service_orders', <String, Object?>{
     'number': number,
@@ -77,6 +79,7 @@ Future<int> insertServiceOrder(
     'completed_at': completedAt,
     'diagnosis': diagnosis,
     'solution': solution,
+    'image_path': imagePath,
   });
 }
 
@@ -95,8 +98,9 @@ Future<List<Map<String, Object?>>> queryServiceOrders(
 }
 
 Future<ServiceOrderController> pumpServiceOrdersModule(
-  WidgetTester tester,
-) async {
+  WidgetTester tester, {
+  ImageFilePicker? pickImage,
+}) async {
   tester.view.physicalSize = const Size(1280, 1024);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -108,7 +112,9 @@ Future<ServiceOrderController> pumpServiceOrdersModule(
         home: Scaffold(
           body: ChangeNotifierProvider<ServiceOrderController>.value(
             value: controller,
-            child: const ServiceOrdersModule(),
+            child: ServiceOrdersModule(
+              pickImage: pickImage ?? pickImageFile,
+            ),
           ),
         ),
       ),
