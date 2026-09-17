@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/core/priority.dart';
+import 'package:ordem_de_servico/core/service_order_filter.dart';
 import 'package:ordem_de_servico/core/service_order_status.dart';
 import 'package:ordem_de_servico/models/service_order.dart';
 import 'package:ordem_de_servico/repositories/service_order_repository.dart';
@@ -179,5 +180,367 @@ void main() {
     );
 
     expect(await repository.findAll(), isEmpty);
+  });
+
+  group('findFiltered', () {
+    Future<int> technicianIdOf(String name) async {
+      final Database database = await DatabaseHelper.instance.database;
+      final List<Map<String, Object?>> rows = await database.query(
+        'technicians',
+        columns: <String>['id'],
+        where: 'name = ?',
+        whereArgs: <Object?>[name],
+      );
+      return rows.single['id']! as int;
+    }
+
+    Future<List<String>> numbersOf(ServiceOrderFilter filter) async {
+      final List<ServiceOrder> orders = await repository.findFiltered(filter);
+      return orders.map((ServiceOrder order) => order.number).toList();
+    }
+
+    Future<void> insertAnaAndCarlosOrders() async {
+      await repository.insert(
+        newOrder(
+          customerId: 1,
+          equipmentId: 1,
+          technicianId: await technicianIdOf('Rafael Duarte'),
+        ),
+      );
+      await repository.insert(
+        newOrder(
+          customerId: 2,
+          equipmentId: 3,
+          technicianId: await technicianIdOf('Bruno Alencar'),
+        ),
+      );
+    }
+
+    Future<({int customerId, int equipmentId})> insertCustomerWithEquipment(
+      String customerName,
+      String equipmentType,
+    ) async {
+      final Database database = await DatabaseHelper.instance.database;
+      final int customerId = await database.insert(
+        'customers',
+        <String, Object?>{
+          'name': customerName,
+          'document': '99988877766',
+          'phone': '11955554444',
+          'email': 'contato@example.com',
+          'address': 'Rua Exemplo, 100',
+        },
+      );
+      final int equipmentId = await database.insert(
+        'equipment',
+        <String, Object?>{'customer_id': customerId, 'type': equipmentType},
+      );
+      return (customerId: customerId, equipmentId: equipmentId);
+    }
+
+    Future<void> insertTenAssortedOrders() async {
+      final int bruno = await technicianIdOf('Bruno Alencar');
+      final int rafael = await technicianIdOf('Rafael Duarte');
+      final List<ServiceOrder> orders = <ServiceOrder>[
+        newOrder(
+          status: ServiceOrderStatus.open,
+          priority: Priority.low,
+          dueDate: DateTime(2026, 9, 1),
+        ),
+        newOrder(
+          status: ServiceOrderStatus.open,
+          priority: Priority.urgent,
+          technicianId: bruno,
+          dueDate: DateTime(2026, 9, 2),
+        ),
+        newOrder(
+          status: ServiceOrderStatus.assigned,
+          priority: Priority.medium,
+          technicianId: rafael,
+          dueDate: DateTime(2026, 9, 3),
+        ),
+        newOrder(
+          status: ServiceOrderStatus.inProgress,
+          priority: Priority.high,
+          technicianId: bruno,
+          dueDate: DateTime(2026, 9, 4),
+        ),
+        newOrder(
+          status: ServiceOrderStatus.awaitingPart,
+          priority: Priority.urgent,
+          technicianId: rafael,
+          dueDate: DateTime(2026, 9, 5),
+        ),
+        newOrder(
+          status: ServiceOrderStatus.awaitingPart,
+          priority: Priority.medium,
+          dueDate: DateTime(2026, 9, 6),
+        ),
+        newOrder(
+          status: ServiceOrderStatus.completed,
+          priority: Priority.low,
+          technicianId: bruno,
+          dueDate: DateTime(2026, 9, 7),
+        ),
+        newOrder(
+          status: ServiceOrderStatus.completed,
+          priority: Priority.high,
+          technicianId: rafael,
+          dueDate: DateTime(2026, 9, 8),
+        ),
+        newOrder(
+          status: ServiceOrderStatus.cancelled,
+          priority: Priority.medium,
+          dueDate: DateTime(2026, 9, 9),
+        ),
+        newOrder(
+          status: ServiceOrderStatus.open,
+          priority: Priority.low,
+          technicianId: rafael,
+          dueDate: DateTime(2026, 9, 10),
+        ),
+      ];
+      for (final ServiceOrder order in orders) {
+        await repository.insert(order);
+      }
+    }
+
+    test('finds an order by part of its number', () async {
+      await insertAnaAndCarlosOrders();
+
+      expect(await numbersOf(const ServiceOrderFilter(term: '0001')), <String>[
+        'OS-2026-0001',
+      ]);
+    });
+
+    test('finds an order by part of the customer name', () async {
+      await insertAnaAndCarlosOrders();
+
+      expect(await numbersOf(const ServiceOrderFilter(term: 'Ana')), <String>[
+        'OS-2026-0001',
+      ]);
+    });
+
+    test('finds an order by part of the equipment type', () async {
+      await insertAnaAndCarlosOrders();
+
+      expect(
+        await numbersOf(const ServiceOrderFilter(term: 'notebook')),
+        <String>['OS-2026-0002'],
+      );
+    });
+
+    test('finds an order by part of the technician name', () async {
+      await insertAnaAndCarlosOrders();
+
+      expect(
+        await numbersOf(const ServiceOrderFilter(term: 'Duarte')),
+        <String>['OS-2026-0001'],
+      );
+    });
+
+    test(
+      'finds the same order for an upper case and a lower case term',
+      () async {
+        await insertAnaAndCarlosOrders();
+
+        expect(await numbersOf(const ServiceOrderFilter(term: 'ANA')), <String>[
+          'OS-2026-0001',
+        ]);
+        expect(await numbersOf(const ServiceOrderFilter(term: 'ana')), <String>[
+          'OS-2026-0001',
+        ]);
+      },
+    );
+
+    test('finds an order by a fragment in the middle of a field', () async {
+      await insertAnaAndCarlosOrders();
+
+      expect(
+        await numbersOf(const ServiceOrderFilter(term: 'condicionado')),
+        <String>['OS-2026-0001'],
+      );
+    });
+
+    test('finds an order without a technician by the customer name', () async {
+      for (int i = 0; i < 4; i++) {
+        await repository.insert(newOrder(customerId: 2, equipmentId: 3));
+      }
+      await repository.insert(newOrder(customerId: 1, equipmentId: 1));
+
+      expect(await numbersOf(const ServiceOrderFilter(term: 'Ana')), <String>[
+        'OS-2026-0005',
+      ]);
+    });
+
+    test('finds an order whose customer name contains an apostrophe', () async {
+      final ({int customerId, int equipmentId}) restaurant =
+          await insertCustomerWithEquipment(
+            "Restaurante D'Angelo",
+            'Câmara fria',
+          );
+      await repository.insert(
+        newOrder(
+          customerId: 1,
+          equipmentId: 1,
+          status: ServiceOrderStatus.open,
+        ),
+      );
+      await repository.insert(
+        newOrder(
+          customerId: restaurant.customerId,
+          equipmentId: restaurant.equipmentId,
+          status: ServiceOrderStatus.open,
+        ),
+      );
+
+      expect(
+        await numbersOf(const ServiceOrderFilter(term: "D'Angelo")),
+        <String>['OS-2026-0002'],
+      );
+    });
+
+    test('filters by the awaiting part status', () async {
+      await insertTenAssortedOrders();
+
+      final List<ServiceOrder> orders = await repository.findFiltered(
+        const ServiceOrderFilter(status: ServiceOrderStatus.awaitingPart),
+      );
+
+      expect(orders, hasLength(2));
+      expect(
+        orders.every(
+          (ServiceOrder order) =>
+              order.status == ServiceOrderStatus.awaitingPart,
+        ),
+        isTrue,
+      );
+    });
+
+    test('filters by the completed status', () async {
+      await insertTenAssortedOrders();
+
+      final List<ServiceOrder> orders = await repository.findFiltered(
+        const ServiceOrderFilter(status: ServiceOrderStatus.completed),
+      );
+
+      expect(orders, hasLength(2));
+      expect(
+        orders.every(
+          (ServiceOrder order) => order.status == ServiceOrderStatus.completed,
+        ),
+        isTrue,
+      );
+    });
+
+    test('filters by the urgent priority', () async {
+      await insertTenAssortedOrders();
+
+      final List<ServiceOrder> orders = await repository.findFiltered(
+        const ServiceOrderFilter(priority: Priority.urgent),
+      );
+
+      expect(orders, hasLength(2));
+      expect(
+        orders.every((ServiceOrder order) => order.priority == Priority.urgent),
+        isTrue,
+      );
+    });
+
+    test('filters by the low priority', () async {
+      await insertTenAssortedOrders();
+
+      final List<ServiceOrder> orders = await repository.findFiltered(
+        const ServiceOrderFilter(priority: Priority.low),
+      );
+
+      expect(orders, hasLength(3));
+      expect(
+        orders.every((ServiceOrder order) => order.priority == Priority.low),
+        isTrue,
+      );
+    });
+
+    test('filters by the technician in charge', () async {
+      await insertTenAssortedOrders();
+      final int rafael = await technicianIdOf('Rafael Duarte');
+
+      final List<ServiceOrder> orders = await repository.findFiltered(
+        ServiceOrderFilter(technicianId: rafael),
+      );
+
+      expect(orders, hasLength(4));
+      expect(
+        orders.every(
+          (ServiceOrder order) => order.technicianName == 'Rafael Duarte',
+        ),
+        isTrue,
+      );
+    });
+
+    test('keeps the ascending due date order under an active filter', () async {
+      await repository.insert(newOrder(dueDate: DateTime(2026, 9, 30)));
+      await repository.insert(newOrder(dueDate: DateTime(2026, 9, 1)));
+      await repository.insert(newOrder(dueDate: DateTime(2026, 9, 15)));
+
+      final List<ServiceOrder> orders = await repository.findFiltered(
+        const ServiceOrderFilter(status: ServiceOrderStatus.open),
+      );
+
+      expect(orders.map((ServiceOrder order) => order.dueDate), <DateTime>[
+        DateTime(2026, 9, 1),
+        DateTime(2026, 9, 15),
+        DateTime(2026, 9, 30),
+      ]);
+    });
+
+    test('lists every order when no criterion is active', () async {
+      await insertTenAssortedOrders();
+
+      final List<ServiceOrder> filtered = await repository.findFiltered(
+        const ServiceOrderFilter.empty(),
+      );
+      final List<ServiceOrder> all = await repository.findAll();
+
+      expect(filtered, hasLength(10));
+      expect(
+        filtered.map((ServiceOrder order) => order.number),
+        all.map((ServiceOrder order) => order.number),
+      );
+    });
+
+    test('combines the term with the status criterion', () async {
+      await repository.insert(
+        newOrder(
+          customerId: 1,
+          equipmentId: 1,
+          status: ServiceOrderStatus.open,
+        ),
+      );
+      await repository.insert(
+        newOrder(
+          customerId: 1,
+          equipmentId: 2,
+          status: ServiceOrderStatus.completed,
+        ),
+      );
+      await repository.insert(
+        newOrder(
+          customerId: 2,
+          equipmentId: 3,
+          status: ServiceOrderStatus.open,
+        ),
+      );
+
+      expect(
+        await numbersOf(
+          const ServiceOrderFilter(
+            term: 'Ana',
+            status: ServiceOrderStatus.open,
+          ),
+        ),
+        <String>['OS-2026-0001'],
+      );
+    });
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/controllers/service_order_controller.dart';
+import 'package:ordem_de_servico/screens/service_orders/service_order_list_view.dart';
 import 'package:ordem_de_servico/screens/service_orders/service_orders_module.dart';
 import 'package:ordem_de_servico/services/image_file_picker.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,7 @@ export '../customers/customers_test_support.dart'
         withDatabase,
         insertCustomer,
         tapAndWaitForDatabase,
+        waitForDatabase,
         tapAndPump,
         expectNoDialogs,
         expectNoTechnicalErrorText;
@@ -112,9 +114,7 @@ Future<ServiceOrderController> pumpServiceOrdersModule(
         home: Scaffold(
           body: ChangeNotifierProvider<ServiceOrderController>.value(
             value: controller,
-            child: ServiceOrdersModule(
-              pickImage: pickImage ?? pickImageFile,
-            ),
+            child: ServiceOrdersModule(pickImage: pickImage ?? pickImageFile),
           ),
         ),
       ),
@@ -124,6 +124,21 @@ Future<ServiceOrderController> pumpServiceOrdersModule(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   return controller;
+}
+
+Future<void> searchForTerm(WidgetTester tester, String term) async {
+  await tester.enterText(find.byKey(ServiceOrderListView.searchFieldKey), term);
+  await tester.pump();
+  await waitForDatabase(tester);
+}
+
+Future<void> selectFilterOption(
+  WidgetTester tester,
+  Key selectorKey,
+  String label,
+) async {
+  await tapAndPump(tester, find.byKey(selectorKey));
+  await tapAndWaitForDatabase(tester, find.text(label).last);
 }
 
 Future<void> selectOption(

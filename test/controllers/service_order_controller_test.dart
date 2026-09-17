@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/controllers/service_order_controller.dart';
 import 'package:ordem_de_servico/core/deletion_result.dart';
 import 'package:ordem_de_servico/core/priority.dart';
+import 'package:ordem_de_servico/core/service_order_filter.dart';
 import 'package:ordem_de_servico/core/service_order_status.dart';
 import 'package:ordem_de_servico/core/transition_result.dart';
 import 'package:ordem_de_servico/models/part_item.dart';
@@ -402,4 +403,70 @@ void main() {
       },
     );
   }
+
+  group('filter', () {
+    Future<ServiceOrderController> controllerWithTwoCustomerOrders() async {
+      final ServiceOrderController controller = ServiceOrderController();
+      await controller.open(newOrder(customerId: 1, equipmentId: 1));
+      await controller.open(newOrder(customerId: 2, equipmentId: 3));
+      expect(controller.orders, hasLength(2));
+      return controller;
+    }
+
+    test('applyFilter keeps the criteria and lists only the matches', () async {
+      final ServiceOrderController controller =
+          await controllerWithTwoCustomerOrders();
+
+      await controller.applyFilter(
+        const ServiceOrderFilter(
+          term: 'Ana',
+          status: ServiceOrderStatus.open,
+          priority: Priority.medium,
+        ),
+      );
+
+      expect(controller.filter.term, 'Ana');
+      expect(controller.filter.status, ServiceOrderStatus.open);
+      expect(controller.filter.priority, Priority.medium);
+      expect(controller.filter.isActive, isTrue);
+      expect(
+        controller.orders.map((ServiceOrder order) => order.customerName),
+        <String>['Ana Ribeiro'],
+      );
+    });
+
+    test('clearFilter drops every criterion and lists every order', () async {
+      final ServiceOrderController controller =
+          await controllerWithTwoCustomerOrders();
+      await controller.applyFilter(
+        ServiceOrderFilter(
+          term: 'Ana',
+          status: ServiceOrderStatus.completed,
+          priority: Priority.urgent,
+          technicianId: await technicianIdByName('Rafael Duarte'),
+        ),
+      );
+      expect(controller.orders, isEmpty);
+
+      await controller.clearFilter();
+
+      expect(controller.filter.term, isEmpty);
+      expect(controller.filter.status, isNull);
+      expect(controller.filter.priority, isNull);
+      expect(controller.filter.technicianId, isNull);
+      expect(controller.filter.isActive, isFalse);
+      expect(controller.orders, hasLength(2));
+    });
+
+    test('notifies listeners when the criteria change', () async {
+      final ServiceOrderController controller =
+          await controllerWithTwoCustomerOrders();
+      int notifications = 0;
+      controller.addListener(() => notifications++);
+
+      await controller.applyFilter(const ServiceOrderFilter(term: 'Ana'));
+
+      expect(notifications, greaterThan(0));
+    });
+  });
 }

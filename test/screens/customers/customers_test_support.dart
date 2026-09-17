@@ -95,9 +95,7 @@ Future<CustomerController> pumpCustomersModule(WidgetTester tester) async {
   return controller;
 }
 
-Future<void> tapAndWaitForDatabase(WidgetTester tester, Finder target) async {
-  await tester.tap(target);
-  await tester.pump();
+Future<void> waitForDatabase(WidgetTester tester) async {
   for (int i = 0; i < 6; i++) {
     await tester.runAsync(() async {
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -105,6 +103,12 @@ Future<void> tapAndWaitForDatabase(WidgetTester tester, Finder target) async {
     await tester.pump();
   }
   await tester.pump(const Duration(milliseconds: 500));
+}
+
+Future<void> tapAndWaitForDatabase(WidgetTester tester, Finder target) async {
+  await tester.tap(target);
+  await tester.pump();
+  await waitForDatabase(tester);
 }
 
 Future<void> tapAndPump(WidgetTester tester, Finder target) async {

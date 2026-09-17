@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 import '../core/deletion_result.dart';
+import '../core/service_order_filter.dart';
 import '../core/service_order_status.dart';
 import '../core/transition_result.dart';
 import '../models/part_item.dart';
@@ -72,6 +73,8 @@ class ServiceOrderController extends ChangeNotifier {
 
   String? _error;
 
+  ServiceOrderFilter _filter = const ServiceOrderFilter.empty();
+
   List<ServiceOrder> get orders => _orders;
 
   List<PartItem> get partItems => _partItems;
@@ -80,12 +83,14 @@ class ServiceOrderController extends ChangeNotifier {
 
   String? get error => _error;
 
+  ServiceOrderFilter get filter => _filter;
+
   Future<void> load() async {
     _loading = true;
     _error = null;
     notifyListeners();
     try {
-      _orders = await _repository.findAll();
+      _orders = await _repository.findFiltered(_filter);
     } on DatabaseAccessException {
       _error = unavailableMessage;
     } finally {
@@ -93,6 +98,19 @@ class ServiceOrderController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> applyFilter(ServiceOrderFilter filter) async {
+    _filter = filter;
+    _error = null;
+    try {
+      _orders = await _repository.findFiltered(filter);
+    } on DatabaseAccessException {
+      _error = unavailableMessage;
+    }
+    notifyListeners();
+  }
+
+  Future<void> clearFilter() => applyFilter(const ServiceOrderFilter.empty());
 
   Future<bool> open(ServiceOrder order) {
     return _write(() => _repository.insert(order));
@@ -145,7 +163,7 @@ class ServiceOrderController extends ChangeNotifier {
       rethrow;
     }
     try {
-      _orders = await _repository.findAll();
+      _orders = await _repository.findFiltered(_filter);
     } on DatabaseAccessException {
       _error = unavailableMessage;
     }
@@ -330,7 +348,7 @@ class ServiceOrderController extends ChangeNotifier {
       return false;
     }
     try {
-      _orders = await _repository.findAll();
+      _orders = await _repository.findFiltered(_filter);
     } on DatabaseAccessException {
       _error = unavailableMessage;
     }

@@ -1,5 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../core/priority.dart';
+import '../core/service_order_filter.dart';
+import '../core/service_order_status.dart';
 import '../models/service_order.dart';
 import '../services/database_helper.dart';
 
@@ -22,11 +25,48 @@ class ServiceOrderRepository {
 
   final DatabaseHelper _databaseHelper;
 
-  Future<List<ServiceOrder>> findAll() async {
+  static const String _termMatch =
+      '(LOWER(o.number) LIKE ? '
+      'OR LOWER(c.name) LIKE ? '
+      'OR LOWER(e.type) LIKE ? '
+      "OR LOWER(COALESCE(t.name, '')) LIKE ?)";
+
+  Future<List<ServiceOrder>> findAll() {
+    return findFiltered(const ServiceOrderFilter.empty());
+  }
+
+  Future<List<ServiceOrder>> findFiltered(ServiceOrderFilter filter) async {
     final Database database = await _databaseHelper.database;
+    final List<String> conditions = <String>[];
+    final List<Object?> arguments = <Object?>[];
+    final String term = filter.term.trim();
+    if (term.isNotEmpty) {
+      final String pattern = '%${term.toLowerCase()}%';
+      conditions.add(_termMatch);
+      arguments.addAll(<Object?>[pattern, pattern, pattern, pattern]);
+    }
+    final ServiceOrderStatus? status = filter.status;
+    if (status != null) {
+      conditions.add('o.status = ?');
+      arguments.add(status.name);
+    }
+    final Priority? priority = filter.priority;
+    if (priority != null) {
+      conditions.add('o.priority = ?');
+      arguments.add(priority.name);
+    }
+    final int? technicianId = filter.technicianId;
+    if (technicianId != null) {
+      conditions.add('o.technician_id = ?');
+      arguments.add(technicianId);
+    }
+    final String where = conditions.isEmpty
+        ? ''
+        : ' WHERE ${conditions.join(' AND ')}';
     try {
       final List<Map<String, Object?>> rows = await database.rawQuery(
-        '$_selectWithNames ORDER BY o.due_date ASC, o.id ASC',
+        '$_selectWithNames$where ORDER BY o.due_date ASC, o.id ASC',
+        arguments,
       );
       return rows.map(ServiceOrder.fromMap).toList();
     } catch (_) {

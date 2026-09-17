@@ -124,6 +124,8 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
 
   List<Technician> _technicians = <Technician>[];
 
+  List<Technician> _criteriaTechnicians = <Technician>[];
+
   ServiceOrder? _selected;
 
   @override
@@ -134,7 +136,21 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
         return;
       }
       context.read<ServiceOrderController>().load();
+      _loadCriteriaTechnicians();
     });
+  }
+
+  Future<void> _loadCriteriaTechnicians() async {
+    List<Technician> technicians;
+    try {
+      technicians = await _technicianRepository.findAll();
+    } on DatabaseAccessException {
+      technicians = <Technician>[];
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _criteriaTechnicians = technicians);
   }
 
   void _showMessage(String message) {
@@ -503,9 +519,7 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
       (ServiceOrder item) => item.id == order.id,
       orElse: () => order,
     );
-    setState(
-      () => _selected = _withPartItems(refreshed, controller.partItems),
-    );
+    setState(() => _selected = _withPartItems(refreshed, controller.partItems));
     _showMessage(ServiceOrdersModule.laborCostSavedMessage);
     return true;
   }
@@ -685,9 +699,7 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
             : null,
       ),
     );
-    setState(
-      () => _selected = _withPartItems(changed, controller.partItems),
-    );
+    setState(() => _selected = _withPartItems(changed, controller.partItems));
     _showMessage(ServiceOrdersModule.statusChangedMessage(target.label));
   }
 
@@ -732,6 +744,7 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
       case _ModuleView.editing:
         return ServiceOrderListView(
           busy: _busy,
+          technicians: _criteriaTechnicians,
           onAdd: _openForm,
           onOpen: _openDetail,
         );
