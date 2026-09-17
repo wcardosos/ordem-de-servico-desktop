@@ -2,6 +2,7 @@ import '../core/priority.dart';
 import '../core/service_order_status.dart';
 import '../core/service_order_transitions.dart';
 import '../core/transition_result.dart';
+import 'part_item.dart';
 
 class ServiceOrder {
   const ServiceOrder({
@@ -20,6 +21,7 @@ class ServiceOrder {
     this.solution,
     this.laborCost = 0,
     this.imagePath,
+    this.partItems = const <PartItem>[],
     this.customerName,
     this.equipmentDescription,
     this.technicianName,
@@ -79,11 +81,20 @@ class ServiceOrder {
 
   final String? imagePath;
 
+  final List<PartItem> partItems;
+
   final String? customerName;
 
   final String? equipmentDescription;
 
   final String? technicianName;
+
+  double get partsTotal => partItems.fold<double>(
+    0,
+    (double total, PartItem item) => total + item.subtotal,
+  );
+
+  double get totalAmount => partsTotal + laborCost;
 
   bool get isOverdue {
     final DateTime now = DateTime.now();
@@ -124,6 +135,7 @@ class ServiceOrder {
       solution: solution,
       laborCost: laborCost,
       imagePath: imagePath,
+      partItems: partItems,
       customerName: customerName,
       equipmentDescription: equipmentDescription,
       technicianName: technicianName,

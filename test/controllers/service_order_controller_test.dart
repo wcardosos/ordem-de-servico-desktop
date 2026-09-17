@@ -4,7 +4,9 @@ import 'package:ordem_de_servico/core/deletion_result.dart';
 import 'package:ordem_de_servico/core/priority.dart';
 import 'package:ordem_de_servico/core/service_order_status.dart';
 import 'package:ordem_de_servico/core/transition_result.dart';
+import 'package:ordem_de_servico/models/part_item.dart';
 import 'package:ordem_de_servico/models/service_order.dart';
+import 'package:ordem_de_servico/repositories/part_item_repository.dart';
 import 'package:ordem_de_servico/repositories/service_order_repository.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -347,6 +349,34 @@ void main() {
 
     expect(result, DeletionResult.success);
     expect(controller.orders, isEmpty);
+    expect(await ServiceOrderRepository().findById(id), isNull);
+  });
+
+  test('delete also removes the part items of the order', () async {
+    final ServiceOrderController controller = ServiceOrderController();
+    await controller.open(newOrder());
+    final int id = controller.orders.single.id!;
+    final PartItemRepository partItems = PartItemRepository();
+    for (final List<Object> part in <List<Object>>[
+      <Object>['Rolete de tração', 1, 98.50],
+      <Object>['Kit de limpeza de roletes', 3, 24.90],
+      <Object>['Gás refrigerante R410A', 2, 95.50],
+    ]) {
+      await partItems.insert(
+        PartItem(
+          serviceOrderId: id,
+          description: part[0] as String,
+          quantity: part[1] as int,
+          unitPrice: part[2] as double,
+        ),
+      );
+    }
+    expect(await partItems.findByServiceOrder(id), hasLength(3));
+
+    final DeletionResult result = await controller.delete(id);
+
+    expect(result, DeletionResult.success);
+    expect(await partItems.findByServiceOrder(id), isEmpty);
     expect(await ServiceOrderRepository().findById(id), isNull);
   });
 

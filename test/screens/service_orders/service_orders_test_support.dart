@@ -162,3 +162,34 @@ String isoDate(DateTime date) =>
     '${date.year.toString().padLeft(4, '0')}-'
     '${date.month.toString().padLeft(2, '0')}-'
     '${date.day.toString().padLeft(2, '0')}';
+
+Future<int> insertPartItem(
+  Database database, {
+  required int serviceOrderId,
+  required String description,
+  required int quantity,
+  required double unitPrice,
+}) {
+  return database.insert('part_items', <String, Object?>{
+    'service_order_id': serviceOrderId,
+    'description': description,
+    'quantity': quantity,
+    'unit_price': unitPrice,
+  });
+}
+
+Future<List<Map<String, Object?>>> queryPartItems(WidgetTester tester) async {
+  List<Map<String, Object?>> rows = <Map<String, Object?>>[];
+  await withDatabase(tester, (database) async {
+    rows = await database.query('part_items', orderBy: 'id');
+  });
+  return rows;
+}
+
+Future<int> partItemIdOf(WidgetTester tester, String description) async {
+  final List<Map<String, Object?>> rows = await queryPartItems(tester);
+  return rows.firstWhere(
+        (Map<String, Object?> row) => row['description'] == description,
+      )['id']!
+      as int;
+}

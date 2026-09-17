@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/core/priority.dart';
 import 'package:ordem_de_servico/core/service_order_status.dart';
 import 'package:ordem_de_servico/core/transition_result.dart';
+import 'package:ordem_de_servico/models/part_item.dart';
 import 'package:ordem_de_servico/models/service_order.dart';
 
 ServiceOrder buildOrder({
@@ -10,6 +11,8 @@ ServiceOrder buildOrder({
   int? technicianId,
   String? diagnosis,
   String? solution,
+  double laborCost = 0,
+  List<PartItem> partItems = const <PartItem>[],
 }) {
   return ServiceOrder(
     number: 'OS-2026-0001',
@@ -23,6 +26,8 @@ ServiceOrder buildOrder({
     technicianId: technicianId,
     diagnosis: diagnosis,
     solution: solution,
+    laborCost: laborCost,
+    partItems: partItems,
   );
 }
 
@@ -270,6 +275,49 @@ void main() {
         order.validateTransitionTo(ServiceOrderStatus.completed),
         TransitionResult.missingDiagnosisAndSolution,
       );
+    });
+  });
+
+  group('totalAmount', () {
+    test('adds the labor cost to the sum of the part item subtotals', () {
+      final ServiceOrder order = buildOrder(
+        status: ServiceOrderStatus.inProgress,
+        laborCost: 150.00,
+        partItems: <PartItem>[
+          const PartItem(
+            serviceOrderId: 1,
+            description: 'Compressor 1/3 HP',
+            quantity: 1,
+            unitPrice: 780.00,
+          ),
+          const PartItem(
+            serviceOrderId: 1,
+            description: 'Gás refrigerante R410A',
+            quantity: 2,
+            unitPrice: 95.50,
+          ),
+        ],
+      );
+
+      expect(order.partsTotal, 971.00);
+      expect(order.totalAmount, 1121.00);
+    });
+
+    test('is the labor cost alone for an order without part items', () {
+      final ServiceOrder order = buildOrder(
+        status: ServiceOrderStatus.open,
+        laborCost: 200.00,
+      );
+
+      expect(order.partsTotal, 0.00);
+      expect(order.totalAmount, 200.00);
+    });
+
+    test('is zero without part items and without labor cost', () {
+      final ServiceOrder order = buildOrder(status: ServiceOrderStatus.open);
+
+      expect(order.partsTotal, 0.00);
+      expect(order.totalAmount, 0.00);
     });
   });
 }

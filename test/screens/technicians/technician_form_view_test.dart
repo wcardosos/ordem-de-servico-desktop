@@ -62,6 +62,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('part_items');
       await database.delete('service_orders');
       await database.delete('technicians');
     });
@@ -118,6 +119,7 @@ void main() {
       int sergioId = 0;
       List<Map<String, Object?>> ordersBefore = <Map<String, Object?>>[];
       await withDatabase(tester, (database) async {
+        await database.delete('part_items');
         await database.delete('service_orders');
         await database.delete('technicians');
         sergioId = await insertTechnician(
@@ -191,6 +193,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('part_items');
       await database.delete('service_orders');
       await database.delete('technicians');
     });

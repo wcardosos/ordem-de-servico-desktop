@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/core/priority.dart';
 import 'package:ordem_de_servico/core/service_order_status.dart';
+import 'package:ordem_de_servico/models/part_item.dart';
 import 'package:ordem_de_servico/models/service_order.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -21,6 +22,7 @@ void setUpServiceOrderDatabase() {
     );
     DatabaseHelper.databaseDirectoryOverride = supportDirectory.path;
     final Database database = await DatabaseHelper.instance.database;
+    await database.delete('part_items');
     await database.delete('service_orders');
   });
 
@@ -49,6 +51,8 @@ ServiceOrder newOrder({
   DateTime? dueDate,
   String? diagnosis,
   String? solution,
+  double laborCost = 0,
+  List<PartItem> partItems = const <PartItem>[],
 }) {
   return ServiceOrder(
     id: id,
@@ -63,5 +67,7 @@ ServiceOrder newOrder({
     dueDate: dueDate ?? DateTime(2026, 9, 30),
     diagnosis: diagnosis,
     solution: solution,
+    laborCost: laborCost,
+    partItems: partItems,
   );
 }

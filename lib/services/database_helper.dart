@@ -162,6 +162,9 @@ CREATE TABLE part_items (
     )) {
       batch.insert('service_orders', order);
     }
+    for (final Map<String, Object?> partItem in seedPartItems) {
+      batch.insert('part_items', partItem);
+    }
     await batch.commit(noResult: true);
   }
 }

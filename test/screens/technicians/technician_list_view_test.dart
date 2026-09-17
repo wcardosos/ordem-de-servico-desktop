@@ -23,6 +23,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('part_items');
       await database.delete('service_orders');
       await database.delete('technicians');
       await insertTechnician(
@@ -71,6 +72,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('part_items');
       await database.delete('service_orders');
       await database.delete('technicians');
     });
@@ -86,6 +88,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await withDatabase(tester, (database) async {
+      await database.delete('part_items');
       await database.delete('service_orders');
       await database.delete('technicians');
       await insertTechnician(
@@ -134,6 +137,7 @@ void main() {
   ) async {
     int? rafaelId;
     await withDatabase(tester, (database) async {
+      await database.delete('part_items');
       await database.delete('service_orders');
       await database.delete('technicians');
       await insertTechnician(database, name: 'Sérgio Lima', active: false);

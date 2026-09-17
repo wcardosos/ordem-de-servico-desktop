@@ -115,7 +115,62 @@ void main() {
     );
 
     expect(await database.query('service_orders'), hasLength(10));
-    expect(await database.query('part_items'), isEmpty);
+    expect(await database.query('part_items'), isNotEmpty);
+  });
+
+  test('seeds part items and labor costs across the demo orders', () async {
+    final Database database = await DatabaseHelper.instance.database;
+
+    final List<Map<String, Object?>> items = await database.query('part_items');
+    final Set<Object?> ordersWithItems = items
+        .map((Map<String, Object?> row) => row['service_order_id'])
+        .toSet();
+    final List<Map<String, Object?>> orders = await database.query(
+      'service_orders',
+    );
+    final Iterable<Map<String, Object?>> ordersWithLabor = orders.where(
+      (Map<String, Object?> row) => (row['labor_cost']! as num) > 0,
+    );
+
+    expect(orders, hasLength(10));
+    expect(ordersWithItems.length, greaterThanOrEqualTo(4));
+    expect(ordersWithLabor.length, greaterThanOrEqualTo(6));
+    expect(
+      items.map((Map<String, Object?> row) => row['quantity']).toSet().length,
+      greaterThan(1),
+    );
+    expect(
+      items.map((Map<String, Object?> row) => row['unit_price']).toSet().length,
+      greaterThan(1),
+    );
+    for (final Map<String, Object?> item in items) {
+      expect(item['quantity']! as int, greaterThan(0));
+      expect(item['unit_price']! as num, greaterThanOrEqualTo(0));
+      expect((item['description']! as String).trim(), isNotEmpty);
+      expect(
+        orders.map((Map<String, Object?> row) => row['id']),
+        contains(item['service_order_id']),
+      );
+    }
+  });
+
+  test('keeps no persisted total column on the service orders table', () async {
+    final Database database = await DatabaseHelper.instance.database;
+
+    final List<Map<String, Object?>> columns = await database.rawQuery(
+      'PRAGMA table_info(service_orders)',
+    );
+
+    final Set<Object?> names = columns
+        .map((Map<String, Object?> row) => row['name'])
+        .toSet();
+    expect(names, contains('labor_cost'));
+    expect(names, isNot(contains('total_amount')));
+    expect(names, isNot(contains('parts_total')));
+    expect(
+      names.whereType<String>().where((String name) => name.contains('total')),
+      isEmpty,
+    );
   });
 
   test(

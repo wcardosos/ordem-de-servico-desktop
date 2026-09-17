@@ -29,3 +29,57 @@ String? validatePhone(String? value) {
   }
   return null;
 }
+
+double? parseDecimal(String? value) {
+  final String text = value?.trim() ?? '';
+  if (text.isEmpty) {
+    return null;
+  }
+  final String normalized = text.contains(',')
+      ? text.replaceAll('.', '').replaceAll(',', '.')
+      : text;
+  return double.tryParse(normalized);
+}
+
+String? validatePartDescription(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return 'Informe a descrição da peça.';
+  }
+  return null;
+}
+
+String? validateQuantity(String? value) {
+  final String text = value?.trim() ?? '';
+  if (text.isEmpty) {
+    return 'Informe a quantidade.';
+  }
+  final int? quantity = int.tryParse(text);
+  if (quantity == null) {
+    return 'Informe um número inteiro válido.';
+  }
+  if (quantity <= 0) {
+    return 'A quantidade deve ser maior que zero.';
+  }
+  return null;
+}
+
+String? validateUnitPrice(String? value) =>
+    _validateAmount(value, 'Informe o valor unitário.');
+
+String? validateLaborCost(String? value) =>
+    _validateAmount(value, 'Informe o valor da mão de obra.');
+
+String? _validateAmount(String? value, String missingMessage) {
+  final String text = value?.trim() ?? '';
+  if (text.isEmpty) {
+    return missingMessage;
+  }
+  final double? amount = parseDecimal(text);
+  if (amount == null) {
+    return 'Informe um valor válido.';
+  }
+  if (amount < 0) {
+    return 'O valor não pode ser negativo.';
+  }
+  return null;
+}

@@ -95,6 +95,45 @@ const List<Map<String, Object?>> seedTechnicians = <Map<String, Object?>>[
   },
 ];
 
+const List<Map<String, Object?>> seedPartItems = <Map<String, Object?>>[
+  <String, Object?>{
+    'service_order_id': 1,
+    'description': 'Bateria selada 12V 7Ah',
+    'quantity': 2,
+    'unit_price': 189.90,
+  },
+  <String, Object?>{
+    'service_order_id': 3,
+    'description': 'Cabo flat de vídeo',
+    'quantity': 1,
+    'unit_price': 145.00,
+  },
+  <String, Object?>{
+    'service_order_id': 4,
+    'description': 'Rolete de tração',
+    'quantity': 1,
+    'unit_price': 98.50,
+  },
+  <String, Object?>{
+    'service_order_id': 4,
+    'description': 'Kit de limpeza de roletes',
+    'quantity': 3,
+    'unit_price': 24.90,
+  },
+  <String, Object?>{
+    'service_order_id': 6,
+    'description': 'Gás refrigerante R410A',
+    'quantity': 2,
+    'unit_price': 95.50,
+  },
+  <String, Object?>{
+    'service_order_id': 6,
+    'description': 'Filtro secador',
+    'quantity': 1,
+    'unit_price': 72.00,
+  },
+];
+
 List<Map<String, Object?>> seedServiceOrders(DateTime now) {
   final DateTime today = DateTime(now.year, now.month, now.day);
   DateTime day(int offset) =>
@@ -114,6 +153,7 @@ List<Map<String, Object?>> seedServiceOrders(DateTime now) {
       completedAt: day(-22),
       diagnosis: 'Bateria interna sem capacidade',
       solution: 'Bateria substituída e autonomia testada',
+      laborCost: 180.00,
     ),
     ServiceOrder(
       number: '',
@@ -138,6 +178,7 @@ List<Map<String, Object?>> seedServiceOrders(DateTime now) {
       completedAt: day(-13),
       diagnosis: 'Cabo flat da tela danificado',
       solution: 'Cabo flat substituído',
+      laborCost: 220.00,
     ),
     ServiceOrder(
       number: '',
@@ -150,6 +191,7 @@ List<Map<String, Object?>> seedServiceOrders(DateTime now) {
       openedAt: day(-12),
       dueDate: day(-1),
       diagnosis: 'Rolete de tração gasto',
+      laborCost: 150.00,
     ),
     ServiceOrder(
       number: '',
@@ -161,6 +203,7 @@ List<Map<String, Object?>> seedServiceOrders(DateTime now) {
       status: ServiceOrderStatus.assigned,
       openedAt: day(-10),
       dueDate: day(-3),
+      laborCost: 130.00,
     ),
     ServiceOrder(
       number: '',
@@ -172,6 +215,7 @@ List<Map<String, Object?>> seedServiceOrders(DateTime now) {
       status: ServiceOrderStatus.inProgress,
       openedAt: day(-6),
       dueDate: day(3),
+      laborCost: 240.00,
     ),
     ServiceOrder(
       number: '',
@@ -202,6 +246,7 @@ List<Map<String, Object?>> seedServiceOrders(DateTime now) {
       problemDescription: 'Desliga ao alternar para a bateria',
       priority: Priority.urgent,
       status: ServiceOrderStatus.inProgress,
+      laborCost: 190.00,
       openedAt: day(-3),
       dueDate: day(1),
     ),

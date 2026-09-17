@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/formatters.dart';
 import '../../core/service_order_labels.dart';
 import '../../core/service_order_status.dart';
 import '../../core/service_order_transitions.dart';
+import '../../core/validators.dart';
+import '../../models/part_item.dart';
 import '../../models/service_order.dart';
 import '../../widgets/section_header.dart';
 
@@ -15,6 +18,9 @@ class ServiceOrderDetailView extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onChangeStatus,
+    required this.onAddPartItem,
+    required this.onRemovePartItem,
+    required this.onSaveLaborCost,
     this.busy = false,
   });
 
@@ -34,6 +40,44 @@ class ServiceOrderDetailView extends StatelessWidget {
 
   static const Key partsSlotKey = Key('serviceOrderDetailPartsSlot');
 
+  static const Key addPartItemButtonKey = Key('serviceOrderAddPartItemButton');
+
+  static const Key partItemDescriptionFieldKey = Key(
+    'serviceOrderPartItemDescriptionField',
+  );
+
+  static const Key partItemQuantityFieldKey = Key(
+    'serviceOrderPartItemQuantityField',
+  );
+
+  static const Key partItemUnitPriceFieldKey = Key(
+    'serviceOrderPartItemUnitPriceField',
+  );
+
+  static const Key confirmPartItemButtonKey = Key(
+    'serviceOrderPartItemConfirmButton',
+  );
+
+  static const Key cancelPartItemButtonKey = Key(
+    'serviceOrderPartItemCancelButton',
+  );
+
+  static const Key laborCostFieldKey = Key('serviceOrderLaborCostField');
+
+  static const Key saveLaborCostButtonKey = Key(
+    'serviceOrderSaveLaborCostButton',
+  );
+
+  static const Key partsTotalKey = Key('serviceOrderPartsTotal');
+
+  static const Key totalAmountKey = Key('serviceOrderTotalAmount');
+
+  static Key partItemSubtotalKey(int itemId) =>
+      ValueKey<String>('serviceOrderPartItemSubtotal-$itemId');
+
+  static Key removePartItemButtonKey(int itemId) =>
+      ValueKey<String>('serviceOrderRemovePartItemButton-$itemId');
+
   static const Key imageSlotKey = Key('serviceOrderDetailImageSlot');
 
   static const String notInformed = 'Não informado';
@@ -41,6 +85,8 @@ class ServiceOrderDetailView extends StatelessWidget {
   static const String noTechnician = 'Sem responsável';
 
   static const String closedOrderMessage = 'Esta ordem está encerrada.';
+
+  static const String noPartItemsMessage = 'Nenhuma peça registrada.';
 
   static final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
 
@@ -56,6 +102,12 @@ class ServiceOrderDetailView extends StatelessWidget {
   final VoidCallback onDelete;
 
   final ValueChanged<ServiceOrderStatus> onChangeStatus;
+
+  final Future<bool> Function(PartItem item) onAddPartItem;
+
+  final Future<void> Function(PartItem item) onRemovePartItem;
+
+  final Future<bool> Function(double laborCost) onSaveLaborCost;
 
   final bool busy;
 
@@ -180,7 +232,14 @@ class ServiceOrderDetailView extends StatelessWidget {
                       busy: busy,
                       onChangeStatus: onChangeStatus,
                     ),
-                    const SizedBox(key: partsSlotKey),
+                    _PartsSection(
+                      key: partsSlotKey,
+                      order: order,
+                      busy: busy,
+                      onAddPartItem: onAddPartItem,
+                      onRemovePartItem: onRemovePartItem,
+                      onSaveLaborCost: onSaveLaborCost,
+                    ),
                     const SizedBox(key: imageSlotKey),
                   ],
                 ),
@@ -272,6 +331,350 @@ class _StatusFlowState extends State<_StatusFlow> {
                 ),
               ],
             ),
+        ],
+      ),
+    );
+  }
+}
+
+bool _acceptsValueChanges(ServiceOrderStatus status) =>
+    status != ServiceOrderStatus.completed &&
+    status != ServiceOrderStatus.cancelled;
+
+class _PartsSection extends StatefulWidget {
+  const _PartsSection({
+    super.key,
+    required this.order,
+    required this.busy,
+    required this.onAddPartItem,
+    required this.onRemovePartItem,
+    required this.onSaveLaborCost,
+  });
+
+  final ServiceOrder order;
+
+  final bool busy;
+
+  final Future<bool> Function(PartItem item) onAddPartItem;
+
+  final Future<void> Function(PartItem item) onRemovePartItem;
+
+  final Future<bool> Function(double laborCost) onSaveLaborCost;
+
+  @override
+  State<_PartsSection> createState() => _PartsSectionState();
+}
+
+class _PartsSectionState extends State<_PartsSection> {
+  static final NumberFormat _amountFormat = NumberFormat('#,##0.00', 'pt_BR');
+
+  final GlobalKey<FormState> _itemFormKey = GlobalKey<FormState>();
+
+  final GlobalKey<FormState> _laborCostFormKey = GlobalKey<FormState>();
+
+  final TextEditingController _descriptionController = TextEditingController();
+
+  final TextEditingController _quantityController = TextEditingController();
+
+  final TextEditingController _unitPriceController = TextEditingController();
+
+  late final TextEditingController _laborCostController;
+
+  bool _addingItem = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _laborCostController = TextEditingController(
+      text: _amountFormat.format(widget.order.laborCost),
+    );
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _quantityController.dispose();
+    _unitPriceController.dispose();
+    _laborCostController.dispose();
+    super.dispose();
+  }
+
+  InputDecoration _decoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: const OutlineInputBorder(),
+    );
+  }
+
+  void _startNewItem() => setState(() => _addingItem = true);
+
+  void _cancelNewItem() {
+    setState(() {
+      _addingItem = false;
+      _descriptionController.clear();
+      _quantityController.clear();
+      _unitPriceController.clear();
+    });
+  }
+
+  Future<void> _confirmNewItem() async {
+    final FormState? form = _itemFormKey.currentState;
+    final int? serviceOrderId = widget.order.id;
+    if (form == null || !form.validate() || serviceOrderId == null) {
+      return;
+    }
+    final int? quantity = int.tryParse(_quantityController.text.trim());
+    final double? unitPrice = parseDecimal(_unitPriceController.text);
+    if (quantity == null || unitPrice == null) {
+      return;
+    }
+    final bool added = await widget.onAddPartItem(
+      PartItem(
+        serviceOrderId: serviceOrderId,
+        description: _descriptionController.text.trim(),
+        quantity: quantity,
+        unitPrice: unitPrice,
+      ),
+    );
+    if (!added || !mounted) {
+      return;
+    }
+    _cancelNewItem();
+  }
+
+  Future<void> _saveLaborCost() async {
+    final FormState? form = _laborCostFormKey.currentState;
+    if (form == null || !form.validate()) {
+      return;
+    }
+    final double? laborCost = parseDecimal(_laborCostController.text);
+    if (laborCost == null) {
+      return;
+    }
+    await widget.onSaveLaborCost(laborCost);
+  }
+
+  Widget _partItemRow(ThemeData theme, PartItem item, bool editable) {
+    final int itemId = item.id ?? 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(item.description, style: theme.textTheme.bodyLarge),
+                Text(
+                  '${item.quantity} × ${formatCurrency(item.unitPrice)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            key: ServiceOrderDetailView.partItemSubtotalKey(itemId),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              formatCurrency(item.subtotal),
+              style: theme.textTheme.bodyLarge,
+            ),
+          ),
+          if (editable)
+            IconButton(
+              key: ServiceOrderDetailView.removePartItemButtonKey(itemId),
+              tooltip: 'Remover item',
+              onPressed: widget.busy
+                  ? null
+                  : () => widget.onRemovePartItem(item),
+              icon: const Icon(Icons.delete_outline),
+            )
+          else
+            const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _newItemForm() {
+    return Form(
+      key: _itemFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          TextFormField(
+            key: ServiceOrderDetailView.partItemDescriptionFieldKey,
+            controller: _descriptionController,
+            enabled: !widget.busy,
+            decoration: _decoration('Descrição da peça'),
+            validator: validatePartDescription,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: TextFormField(
+                  key: ServiceOrderDetailView.partItemQuantityFieldKey,
+                  controller: _quantityController,
+                  enabled: !widget.busy,
+                  decoration: _decoration('Quantidade'),
+                  validator: validateQuantity,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  key: ServiceOrderDetailView.partItemUnitPriceFieldKey,
+                  controller: _unitPriceController,
+                  enabled: !widget.busy,
+                  decoration: _decoration('Valor unitário'),
+                  validator: validateUnitPrice,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: <Widget>[
+              OutlinedButton(
+                key: ServiceOrderDetailView.cancelPartItemButtonKey,
+                onPressed: widget.busy ? null : _cancelNewItem,
+                child: const Text('Cancelar'),
+              ),
+              const SizedBox(width: 12),
+              FilledButton(
+                key: ServiceOrderDetailView.confirmPartItemButtonKey,
+                onPressed: widget.busy ? null : _confirmNewItem,
+                child: const Text('Confirmar'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _laborCostForm(bool editable) {
+    return Form(
+      key: _laborCostFormKey,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Expanded(
+            child: TextFormField(
+              key: ServiceOrderDetailView.laborCostFieldKey,
+              controller: _laborCostController,
+              enabled: editable && !widget.busy,
+              decoration: _decoration('Valor da mão de obra'),
+              validator: validateLaborCost,
+            ),
+          ),
+          if (editable) ...<Widget>[
+            const SizedBox(width: 12),
+            SizedBox(
+              height: 56,
+              child: FilledButton(
+                key: ServiceOrderDetailView.saveLaborCostButtonKey,
+                onPressed: widget.busy ? null : _saveLaborCost,
+                child: const Text('Salvar mão de obra'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ServiceOrder order = widget.order;
+    final bool editable = _acceptsValueChanges(order.status);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text('Peças utilizadas', style: theme.textTheme.labelMedium),
+          const SizedBox(height: 8),
+          if (order.partItems.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                ServiceOrderDetailView.noPartItemsMessage,
+                style: theme.textTheme.bodyLarge,
+              ),
+            ),
+          ...order.partItems.map(
+            (PartItem item) => _partItemRow(theme, item, editable),
+          ),
+          if (editable)
+            if (_addingItem)
+              _newItemForm()
+            else
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  key: ServiceOrderDetailView.addPartItemButtonKey,
+                  onPressed: widget.busy ? null : _startNewItem,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Adicionar item'),
+                ),
+              ),
+          const SizedBox(height: 24),
+          Text('Mão de obra', style: theme.textTheme.labelMedium),
+          const SizedBox(height: 8),
+          _laborCostForm(editable),
+          const SizedBox(height: 24),
+          _AmountRow(
+            slotKey: ServiceOrderDetailView.partsTotalKey,
+            label: 'Subtotal de peças',
+            value: formatCurrency(order.partsTotal),
+          ),
+          _AmountRow(
+            slotKey: ServiceOrderDetailView.totalAmountKey,
+            label: 'Valor total',
+            value: formatCurrency(order.totalAmount),
+            emphasized: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AmountRow extends StatelessWidget {
+  const _AmountRow({
+    required this.slotKey,
+    required this.label,
+    required this.value,
+    this.emphasized = false,
+  });
+
+  final Key slotKey;
+
+  final String label;
+
+  final String value;
+
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? style = emphasized
+        ? theme.textTheme.titleMedium
+        : theme.textTheme.bodyLarge;
+    return Padding(
+      key: slotKey,
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Text(label, style: style),
+          Text(value, style: style),
         ],
       ),
     );
