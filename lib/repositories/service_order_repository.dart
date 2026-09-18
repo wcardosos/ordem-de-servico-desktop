@@ -4,6 +4,7 @@ import '../core/priority.dart';
 import '../core/service_order_filter.dart';
 import '../core/service_order_status.dart';
 import '../models/service_order.dart';
+import '../models/service_order_indicators.dart';
 import '../services/database_helper.dart';
 
 class ServiceOrderRepository {
@@ -24,6 +25,25 @@ class ServiceOrderRepository {
       'LEFT JOIN technicians t ON t.id = o.technician_id';
 
   final DatabaseHelper _databaseHelper;
+
+  static const String _countersQuery =
+      'SELECT COUNT(*) AS total, '
+      "COUNT(CASE WHEN status = 'open' THEN 1 END) AS open_count, "
+      "COUNT(CASE WHEN status = 'inProgress' THEN 1 END) "
+      'AS in_progress_count, '
+      "COUNT(CASE WHEN status = 'awaitingPart' THEN 1 END) "
+      'AS awaiting_part_count, '
+      "COUNT(CASE WHEN status = 'completed' THEN 1 END) AS completed_count, "
+      "COUNT(CASE WHEN priority = 'urgent' THEN 1 END) AS urgent_count, "
+      "COUNT(CASE WHEN status NOT IN ('completed', 'cancelled') "
+      'AND due_date < ? THEN 1 END) AS overdue_count '
+      'FROM service_orders';
+
+  static const String _totalAmountQuery =
+      'SELECT COALESCE('
+      '(SELECT SUM(quantity * unit_price) FROM part_items), 0) + '
+      'COALESCE((SELECT SUM(labor_cost) FROM service_orders), 0) '
+      'AS total_amount';
 
   static const String _termMatch =
       '(LOWER(o.number) LIKE ? '
@@ -86,6 +106,42 @@ class ServiceOrderRepository {
       throw const DatabaseAccessException();
     }
   }
+
+  Future<ServiceOrderIndicators> findIndicators() async {
+    final Database database = await _databaseHelper.database;
+    final DateTime now = DateTime.now();
+    final String today = _isoDate(DateTime(now.year, now.month, now.day));
+    try {
+      final List<Map<String, Object?>> counters = await database.rawQuery(
+        _countersQuery,
+        <Object?>[today],
+      );
+      final List<Map<String, Object?>> amount = await database.rawQuery(
+        _totalAmountQuery,
+      );
+      final Map<String, Object?> row = counters.first;
+      return ServiceOrderIndicators(
+        total: _counter(row, 'total'),
+        open: _counter(row, 'open_count'),
+        inProgress: _counter(row, 'in_progress_count'),
+        awaitingPart: _counter(row, 'awaiting_part_count'),
+        completed: _counter(row, 'completed_count'),
+        urgent: _counter(row, 'urgent_count'),
+        overdue: _counter(row, 'overdue_count'),
+        totalAmount: ((amount.first['total_amount'] as num?) ?? 0).toDouble(),
+      );
+    } catch (_) {
+      throw const DatabaseAccessException();
+    }
+  }
+
+  static int _counter(Map<String, Object?> row, String column) =>
+      ((row[column] as num?) ?? 0).toInt();
+
+  static String _isoDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
   Future<int> insert(ServiceOrder order) async {
     final Database database = await _databaseHelper.database;

@@ -45,6 +45,15 @@ void main() {
       await pumpShell(tester);
 
       expect(find.byType(SideNavbar), findsOneWidget);
+
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(SideNavbar.itemKey('Clientes')));
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
       final ListTile item = tester.widget<ListTile>(
         find.byKey(SideNavbar.itemKey('Clientes')),
       );
