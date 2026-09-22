@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/login_controller.dart';
-import 'app_shell.dart';
+import 'app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -57,11 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     if (authenticated) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (BuildContext context) => const AppShell(),
-        ),
-      );
+      Navigator.of(context).pushReplacementNamed(AppRoutes.shell);
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(

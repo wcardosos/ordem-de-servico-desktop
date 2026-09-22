@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ordem_de_servico/screens/app_routes.dart';
 import 'package:ordem_de_servico/screens/app_shell.dart';
 import 'package:ordem_de_servico/screens/customers/customer_list_view.dart';
 import 'package:ordem_de_servico/screens/equipment/equipment_list_view.dart';
@@ -18,21 +19,32 @@ void main() {
     AppModule(
       label: 'Primeiro',
       icon: Icons.looks_one_outlined,
+      route: '/first',
       builder: (BuildContext context) => const Text('conteúdo do primeiro'),
     ),
     AppModule(
       label: 'Segundo',
       icon: Icons.looks_two_outlined,
+      route: '/second',
       builder: (BuildContext context) => const Text('conteúdo do segundo'),
     ),
   ];
+
+  late GlobalKey<NavigatorState> rootNavigatorKey;
 
   Future<void> pumpShell(
     WidgetTester tester, {
     List<AppModule>? modules,
   }) async {
+    rootNavigatorKey = GlobalKey<NavigatorState>();
     await tester.runAsync(() async {
-      await tester.pumpWidget(MaterialApp(home: AppShell(modules: modules)));
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: rootNavigatorKey,
+          home: AppShell(modules: modules),
+          routes: AppRoutes.routes,
+        ),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 200));
     });
     await tester.pump();
@@ -178,7 +190,6 @@ void main() {
 
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.byType(AppShell), findsNothing);
-    final NavigatorState navigator = tester.state(find.byType(Navigator));
-    expect(navigator.canPop(), isFalse);
+    expect(rootNavigatorKey.currentState?.canPop(), isFalse);
   });
 }

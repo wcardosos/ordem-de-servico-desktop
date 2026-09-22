@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import 'controllers/login_controller.dart';
-import 'screens/login_screen.dart';
+import 'screens/app_routes.dart';
 import 'services/database_helper.dart';
 
 Future<void> main() async {
@@ -24,20 +22,26 @@ Future<void> main() async {
 class ServiceOrderApp extends StatelessWidget {
   const ServiceOrderApp({super.key, this.errorMessage});
 
+  static const String _title = 'Ordem de Serviço';
+
   final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
     final String? failure = errorMessage;
+    final ThemeData theme = ThemeData(colorSchemeSeed: Colors.indigo);
+    if (failure != null) {
+      return MaterialApp(
+        title: _title,
+        theme: theme,
+        home: Scaffold(body: Center(child: Text(failure))),
+      );
+    }
     return MaterialApp(
-      title: 'Ordem de Serviço',
-      theme: ThemeData(colorSchemeSeed: Colors.indigo),
-      home: failure != null
-          ? Scaffold(body: Center(child: Text(failure)))
-          : ChangeNotifierProvider<LoginController>(
-              create: (BuildContext context) => LoginController(),
-              child: const LoginScreen(),
-            ),
+      title: _title,
+      theme: theme,
+      initialRoute: AppRoutes.login,
+      routes: AppRoutes.routes,
     );
   }
 }

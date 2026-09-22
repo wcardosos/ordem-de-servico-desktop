@@ -7,6 +7,7 @@ import '../controllers/equipment_controller.dart';
 import '../controllers/service_order_controller.dart';
 import '../controllers/technician_controller.dart';
 import '../widgets/app_module.dart';
+import 'app_routes.dart';
 import 'customers/customers_module.dart';
 import 'dashboard/dashboard_module.dart';
 import 'equipment/equipment_module.dart';
@@ -17,6 +18,7 @@ final List<AppModule> appModules = <AppModule>[
   AppModule(
     label: 'Painel',
     icon: Icons.dashboard_outlined,
+    route: AppRoutes.dashboard,
     builder: (BuildContext context) =>
         ChangeNotifierProvider<DashboardController>(
           create: (BuildContext context) => DashboardController(),
@@ -26,6 +28,7 @@ final List<AppModule> appModules = <AppModule>[
   AppModule(
     label: 'Clientes',
     icon: Icons.people_outline,
+    route: AppRoutes.customers,
     builder: (BuildContext context) =>
         ChangeNotifierProvider<CustomerController>(
           create: (BuildContext context) => CustomerController(),
@@ -35,6 +38,7 @@ final List<AppModule> appModules = <AppModule>[
   AppModule(
     label: 'Técnicos',
     icon: Icons.engineering_outlined,
+    route: AppRoutes.technicians,
     builder: (BuildContext context) =>
         ChangeNotifierProvider<TechnicianController>(
           create: (BuildContext context) => TechnicianController(),
@@ -44,6 +48,7 @@ final List<AppModule> appModules = <AppModule>[
   AppModule(
     label: 'Equipamentos',
     icon: Icons.devices_other_outlined,
+    route: AppRoutes.equipment,
     builder: (BuildContext context) =>
         ChangeNotifierProvider<EquipmentController>(
           create: (BuildContext context) => EquipmentController(),
@@ -53,6 +58,7 @@ final List<AppModule> appModules = <AppModule>[
   AppModule(
     label: 'Ordens de serviço',
     icon: Icons.assignment_outlined,
+    route: AppRoutes.serviceOrders,
     builder: (BuildContext context) =>
         ChangeNotifierProvider<ServiceOrderController>(
           create: (BuildContext context) => ServiceOrderController(),

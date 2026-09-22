@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/controllers/login_controller.dart';
 import 'package:ordem_de_servico/models/user.dart';
 import 'package:ordem_de_servico/repositories/user_repository.dart';
+import 'package:ordem_de_servico/screens/app_routes.dart';
 import 'package:ordem_de_servico/screens/app_shell.dart';
 import 'package:ordem_de_servico/screens/login_screen.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
@@ -29,6 +30,7 @@ void main() {
   late Directory supportDirectory;
   late CountingUserRepository repository;
   late LoginController controller;
+  late GlobalKey<NavigatorState> rootNavigatorKey;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -56,11 +58,19 @@ void main() {
   Future<void> pumpLoginScreen(WidgetTester tester) async {
     repository = CountingUserRepository();
     controller = LoginController(repository: repository);
+    rootNavigatorKey = GlobalKey<NavigatorState>();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       ChangeNotifierProvider<LoginController>.value(
         value: controller,
-        child: const MaterialApp(home: LoginScreen()),
+        child: MaterialApp(
+          navigatorKey: rootNavigatorKey,
+          initialRoute: AppRoutes.login,
+          routes: <String, WidgetBuilder>{
+            AppRoutes.login: (BuildContext context) => const LoginScreen(),
+            AppRoutes.shell: (BuildContext context) => const AppShell(),
+          },
+        ),
       ),
     );
   }
@@ -96,8 +106,7 @@ void main() {
 
       expect(find.byType(AppShell), findsOneWidget);
       expect(find.byType(LoginScreen), findsNothing);
-      final NavigatorState navigator = tester.state(find.byType(Navigator));
-      expect(navigator.canPop(), isFalse);
+      expect(rootNavigatorKey.currentState?.canPop(), isFalse);
       expect(repository.credentialQueryCount, 1);
       expect(controller.authenticatedUser?.username, 'admin');
     },
