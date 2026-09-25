@@ -7,6 +7,7 @@ import '../../models/customer.dart';
 import '../../models/equipment.dart';
 import '../../repositories/customer_repository.dart';
 import '../../services/database_helper.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/confirmation_dialog.dart';
 import 'equipment_form_view.dart';
 import 'equipment_list_view.dart';
@@ -54,10 +55,8 @@ class _EquipmentModuleState extends State<EquipmentModule> {
     });
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, SnackBarKind kind) {
+    showAppSnackBar(context, message, kind: kind);
   }
 
   void _showList() {
@@ -80,11 +79,14 @@ class _EquipmentModuleState extends State<EquipmentModule> {
     }
     setState(() => _busy = false);
     if (customers == null) {
-      _showMessage(EquipmentModule.customersUnavailableMessage);
+      _showMessage(
+        EquipmentModule.customersUnavailableMessage,
+        SnackBarKind.error,
+      );
       return;
     }
     if (customers.isEmpty) {
-      _showMessage(EquipmentModule.noCustomersMessage);
+      _showMessage(EquipmentModule.noCustomersMessage, SnackBarKind.warning);
       return;
     }
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -97,7 +99,7 @@ class _EquipmentModuleState extends State<EquipmentModule> {
 
   void _handleSaved() {
     _showList();
-    _showMessage(EquipmentController.savedMessage);
+    _showMessage(EquipmentController.savedMessage, SnackBarKind.success);
   }
 
   Future<void> _delete(Equipment equipment) async {
@@ -126,9 +128,12 @@ class _EquipmentModuleState extends State<EquipmentModule> {
     setState(() => _busy = false);
     switch (result) {
       case DeletionResult.success:
-        _showMessage(EquipmentController.deletedMessage);
+        _showMessage(EquipmentController.deletedMessage, SnackBarKind.success);
       case DeletionResult.failure:
-        _showMessage(EquipmentController.deleteFailedMessage);
+        _showMessage(
+          EquipmentController.deleteFailedMessage,
+          SnackBarKind.error,
+        );
       case DeletionResult.blockedByLink:
         await showBlockedDialog(
           context,

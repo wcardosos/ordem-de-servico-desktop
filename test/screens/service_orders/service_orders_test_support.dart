@@ -18,7 +18,8 @@ export '../customers/customers_test_support.dart'
         waitForDatabase,
         tapAndPump,
         expectNoDialogs,
-        expectNoTechnicalErrorText;
+        expectNoTechnicalErrorText,
+        expectSnackBarKind;
 
 Future<void> clearServiceOrderData(Database database) async {
   await database.delete('part_items');

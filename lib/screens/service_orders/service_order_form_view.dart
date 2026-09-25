@@ -12,6 +12,7 @@ import '../../models/service_order.dart';
 import '../../models/technician.dart';
 import '../../repositories/equipment_repository.dart';
 import '../../services/database_helper.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/section_header.dart';
 
 class ServiceOrderFormView extends StatefulWidget {
@@ -99,10 +100,8 @@ class _ServiceOrderFormViewState extends State<ServiceOrderFormView> {
     super.dispose();
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, SnackBarKind kind) {
+    showAppSnackBar(context, message, kind: kind);
   }
 
   Future<void> _selectCustomer(int? customerId) async {
@@ -125,7 +124,10 @@ class _ServiceOrderFormViewState extends State<ServiceOrderFormView> {
       return;
     }
     if (equipment == null) {
-      _showMessage(ServiceOrderFormView.equipmentUnavailableMessage);
+      _showMessage(
+        ServiceOrderFormView.equipmentUnavailableMessage,
+        SnackBarKind.error,
+      );
       return;
     }
     setState(() => _equipment = equipment!);
@@ -184,7 +186,7 @@ class _ServiceOrderFormViewState extends State<ServiceOrderFormView> {
     }
     setState(() => _saving = false);
     if (!opened) {
-      _showMessage(ServiceOrderFormView.openFailedMessage);
+      _showMessage(ServiceOrderFormView.openFailedMessage, SnackBarKind.error);
       return;
     }
     ServiceOrder? created;

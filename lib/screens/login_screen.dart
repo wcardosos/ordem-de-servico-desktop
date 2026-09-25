@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/login_controller.dart';
+import '../widgets/app_snack_bar.dart';
 import 'app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -60,12 +61,10 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.of(context).pushReplacementNamed(AppRoutes.shell);
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          controller.errorMessage ?? LoginController.invalidCredentialsMessage,
-        ),
-      ),
+    showAppSnackBar(
+      context,
+      controller.errorMessage ?? LoginController.invalidCredentialsMessage,
+      kind: SnackBarKind.error,
     );
   }
 

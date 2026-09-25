@@ -7,6 +7,7 @@ import 'package:ordem_de_servico/screens/service_orders/service_order_detail_vie
 import 'package:ordem_de_servico/screens/service_orders/service_order_list_view.dart';
 import 'package:ordem_de_servico/screens/service_orders/service_orders_module.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
+import 'package:ordem_de_servico/widgets/app_snack_bar.dart';
 
 import 'service_orders_test_support.dart';
 
@@ -135,6 +136,7 @@ void main() {
 
     expect(field('status', 'Em atendimento'), findsOneWidget);
     expect(inSnackBar('Status alterado para Em atendimento.'), findsOneWidget);
+    expectSnackBarKind(tester, SnackBarKind.success);
     expect(await storedStatus(tester), 'inProgress');
     expectNoDialogs();
 
@@ -191,11 +193,12 @@ void main() {
     await chooseAndConfirm(tester, 'Concluída');
 
     expect(
-      find.text(
+      inSnackBar(
         'Informe o diagnóstico ou a solução antes de concluir a ordem.',
       ),
       findsOneWidget,
     );
+    expectSnackBarKind(tester, SnackBarKind.warning);
     expect(field('status', 'Em atendimento'), findsOneWidget);
     expect(await storedStatus(tester), 'inProgress');
   });
@@ -243,6 +246,7 @@ void main() {
       inSnackBar('Não foi possível alterar o status. Tente novamente.'),
       findsOneWidget,
     );
+    expectSnackBarKind(tester, SnackBarKind.error);
     expect(field('status', 'Atribuída'), findsOneWidget);
     expect(find.byType(ServiceOrderDetailView), findsOneWidget);
     expectNoTechnicalErrorText();

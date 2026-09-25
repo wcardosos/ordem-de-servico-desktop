@@ -5,6 +5,7 @@ import '../../controllers/equipment_controller.dart';
 import '../../core/validators.dart';
 import '../../models/customer.dart';
 import '../../models/equipment.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/section_header.dart';
 
 class EquipmentFormView extends StatefulWidget {
@@ -105,7 +106,6 @@ class _EquipmentFormViewState extends State<EquipmentFormView> {
       return;
     }
     final EquipmentController controller = context.read<EquipmentController>();
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final bool saved = await controller.save(
       Equipment(
         id: widget.equipment?.id,
@@ -125,12 +125,10 @@ class _EquipmentFormViewState extends State<EquipmentFormView> {
       widget.onSaved();
       return;
     }
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          controller.saveError ?? EquipmentController.saveFailedMessage,
-        ),
-      ),
+    showAppSnackBar(
+      context,
+      controller.saveError ?? EquipmentController.saveFailedMessage,
+      kind: SnackBarKind.error,
     );
   }
 

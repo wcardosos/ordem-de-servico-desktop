@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../controllers/customer_controller.dart';
 import '../../core/deletion_result.dart';
 import '../../models/customer.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/confirmation_dialog.dart';
 import 'customer_form_view.dart';
 import 'customer_list_view.dart';
@@ -50,15 +51,13 @@ class _CustomersModuleState extends State<CustomersModule> {
     });
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, SnackBarKind kind) {
+    showAppSnackBar(context, message, kind: kind);
   }
 
   void _handleSaved() {
     _show(_CustomerView.list);
-    _showMessage(CustomerController.savedMessage);
+    _showMessage(CustomerController.savedMessage, SnackBarKind.success);
   }
 
   Future<void> _delete(Customer customer) async {
@@ -87,9 +86,12 @@ class _CustomersModuleState extends State<CustomersModule> {
     setState(() => _busy = false);
     switch (result) {
       case DeletionResult.success:
-        _showMessage(CustomerController.deletedMessage);
+        _showMessage(CustomerController.deletedMessage, SnackBarKind.success);
       case DeletionResult.failure:
-        _showMessage(CustomerController.deleteFailedMessage);
+        _showMessage(
+          CustomerController.deleteFailedMessage,
+          SnackBarKind.error,
+        );
       case DeletionResult.blockedByLink:
         await showBlockedDialog(
           context,

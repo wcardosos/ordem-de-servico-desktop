@@ -7,6 +7,7 @@ import '../../core/priority.dart';
 import '../../core/service_order_labels.dart';
 import '../../models/service_order.dart';
 import '../../models/technician.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/section_header.dart';
 
 class ServiceOrderEditView extends StatefulWidget {
@@ -176,11 +177,11 @@ class _ServiceOrderEditViewState extends State<ServiceOrderEditView> {
     }
     setState(() => _saving = false);
     if (!saved) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text(ServiceOrderEditView.saveFailedMessage)),
-        );
+      showAppSnackBar(
+        context,
+        ServiceOrderEditView.saveFailedMessage,
+        kind: SnackBarKind.error,
+      );
       return;
     }
     widget.onSaved();

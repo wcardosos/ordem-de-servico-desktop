@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../controllers/technician_controller.dart';
 import '../../core/deletion_result.dart';
 import '../../models/technician.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/confirmation_dialog.dart';
 import 'technician_form_view.dart';
 import 'technician_list_view.dart';
@@ -52,15 +53,13 @@ class _TechniciansModuleState extends State<TechniciansModule> {
     });
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, SnackBarKind kind) {
+    showAppSnackBar(context, message, kind: kind);
   }
 
   void _handleSaved() {
     _show(_TechnicianView.list);
-    _showMessage(TechnicianController.savedMessage);
+    _showMessage(TechnicianController.savedMessage, SnackBarKind.success);
   }
 
   Future<void> _delete(Technician technician) async {
@@ -90,9 +89,12 @@ class _TechniciansModuleState extends State<TechniciansModule> {
     setState(() => _busy = false);
     switch (result) {
       case DeletionResult.success:
-        _showMessage(TechnicianController.deletedMessage);
+        _showMessage(TechnicianController.deletedMessage, SnackBarKind.success);
       case DeletionResult.failure:
-        _showMessage(TechnicianController.deleteFailedMessage);
+        _showMessage(
+          TechnicianController.deleteFailedMessage,
+          SnackBarKind.error,
+        );
       case DeletionResult.blockedByLink:
         await showBlockedDialog(
           context,

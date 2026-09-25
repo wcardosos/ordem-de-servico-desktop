@@ -5,6 +5,7 @@ import 'package:ordem_de_servico/repositories/customer_repository.dart';
 import 'package:ordem_de_servico/screens/customers/customer_list_view.dart';
 import 'package:ordem_de_servico/screens/customers/customers_module.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
+import 'package:ordem_de_servico/widgets/app_snack_bar.dart';
 
 import 'customers_test_support.dart';
 
@@ -129,6 +130,7 @@ void main() {
       ),
       findsOneWidget,
     );
+    expectSnackBarKind(tester, SnackBarKind.success);
     expectNoDialogs();
   });
 
@@ -239,6 +241,7 @@ void main() {
         find.text('Não foi possível excluir o cliente. Tente novamente.'),
         findsOneWidget,
       );
+      expectSnackBarKind(tester, SnackBarKind.error);
       expect(find.text('Marcos Vieira'), findsOneWidget);
       expect(find.byKey(CustomerListView.errorViewKey), findsNothing);
       expectNoTechnicalErrorText();

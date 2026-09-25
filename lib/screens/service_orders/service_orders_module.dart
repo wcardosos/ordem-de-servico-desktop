@@ -19,6 +19,7 @@ import '../../repositories/technician_repository.dart';
 import '../../services/database_helper.dart';
 import '../../services/image_file_picker.dart';
 import '../../services/image_service.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/confirmation_dialog.dart';
 import 'service_order_detail_view.dart';
 import 'service_order_edit_view.dart';
@@ -154,10 +155,8 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     setState(() => _criteriaTechnicians = technicians);
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, SnackBarKind kind) {
+    showAppSnackBar(context, message, kind: kind);
   }
 
   void _showList() {
@@ -193,7 +192,10 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     }
     setState(() => _busy = false);
     if (customers == null || equipment == null || technicians == null) {
-      _showMessage(ServiceOrdersModule.formDataUnavailableMessage);
+      _showMessage(
+        ServiceOrdersModule.formDataUnavailableMessage,
+        SnackBarKind.error,
+      );
       return;
     }
     final Set<int> customersWithEquipment = equipment
@@ -205,7 +207,10 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
         )
         .toList();
     if (eligible.isEmpty) {
-      _showMessage(ServiceOrdersModule.noEquipmentMessage);
+      _showMessage(
+        ServiceOrdersModule.noEquipmentMessage,
+        SnackBarKind.warning,
+      );
       return;
     }
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -222,6 +227,7 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
       number == null
           ? ServiceOrdersModule.openedWithoutNumberMessage
           : ServiceOrdersModule.openedMessage(number),
+      SnackBarKind.success,
     );
   }
 
@@ -241,12 +247,15 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     }
     setState(() => _busy = false);
     if (failed) {
-      _showMessage(ServiceOrdersModule.orderUnavailableMessage);
+      _showMessage(
+        ServiceOrdersModule.orderUnavailableMessage,
+        SnackBarKind.error,
+      );
       return null;
     }
     if (order == null) {
       _showList();
-      _showMessage(ServiceOrderController.notFoundMessage);
+      _showMessage(ServiceOrderController.notFoundMessage, SnackBarKind.error);
       controller.load();
     }
     return order;
@@ -347,6 +356,9 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     if (!attached) {
       _showMessage(
         controller.error ?? ServiceOrderController.attachImageFailedMessage,
+        controller.error == ServiceOrderController.unacceptedImageMessage
+            ? SnackBarKind.warning
+            : SnackBarKind.error,
       );
       return;
     }
@@ -354,7 +366,10 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     if (!mounted) {
       return;
     }
-    _showMessage(ServiceOrdersModule.imageAttachedMessage);
+    _showMessage(
+      ServiceOrdersModule.imageAttachedMessage,
+      SnackBarKind.success,
+    );
   }
 
   Future<void> _removeImage() async {
@@ -385,6 +400,7 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     if (!removed) {
       _showMessage(
         controller.error ?? ServiceOrderController.removeImageFailedMessage,
+        SnackBarKind.error,
       );
       return;
     }
@@ -392,7 +408,7 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     if (!mounted) {
       return;
     }
-    _showMessage(ServiceOrdersModule.imageRemovedMessage);
+    _showMessage(ServiceOrdersModule.imageRemovedMessage, SnackBarKind.success);
   }
 
   Future<void> _refreshSelectedImage(
@@ -432,11 +448,17 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     }
     setState(() => _busy = false);
     if (!added) {
-      _showMessage(ServiceOrderController.addPartItemFailedMessage);
+      _showMessage(
+        ServiceOrderController.addPartItemFailedMessage,
+        SnackBarKind.error,
+      );
       return false;
     }
     _refreshSelectedPartItems(controller);
-    _showMessage(ServiceOrdersModule.partItemAddedMessage);
+    _showMessage(
+      ServiceOrdersModule.partItemAddedMessage,
+      SnackBarKind.success,
+    );
     return true;
   }
 
@@ -466,11 +488,17 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     }
     setState(() => _busy = false);
     if (!removed) {
-      _showMessage(ServiceOrderController.removePartItemFailedMessage);
+      _showMessage(
+        ServiceOrderController.removePartItemFailedMessage,
+        SnackBarKind.error,
+      );
       return;
     }
     _refreshSelectedPartItems(controller);
-    _showMessage(ServiceOrdersModule.partItemRemovedMessage);
+    _showMessage(
+      ServiceOrdersModule.partItemRemovedMessage,
+      SnackBarKind.success,
+    );
   }
 
   Future<bool> _saveLaborCost(double laborCost) async {
@@ -487,7 +515,10 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     }
     setState(() => _busy = false);
     if (!saved) {
-      _showMessage(ServiceOrderController.saveFailedMessage);
+      _showMessage(
+        ServiceOrderController.saveFailedMessage,
+        SnackBarKind.error,
+      );
       return false;
     }
     final ServiceOrder refreshed = controller.orders.firstWhere(
@@ -495,7 +526,10 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
       orElse: () => order,
     );
     setState(() => _selected = _withPartItems(refreshed, controller.partItems));
-    _showMessage(ServiceOrdersModule.laborCostSavedMessage);
+    _showMessage(
+      ServiceOrdersModule.laborCostSavedMessage,
+      SnackBarKind.success,
+    );
     return true;
   }
 
@@ -520,7 +554,10 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     }
     setState(() => _busy = false);
     if (technicians == null) {
-      _showMessage(ServiceOrdersModule.formDataUnavailableMessage);
+      _showMessage(
+        ServiceOrdersModule.formDataUnavailableMessage,
+        SnackBarKind.error,
+      );
       return;
     }
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -536,7 +573,7 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
 
   void _handleUpdated() {
     _showList();
-    _showMessage(ServiceOrdersModule.updatedMessage);
+    _showMessage(ServiceOrdersModule.updatedMessage, SnackBarKind.success);
   }
 
   Future<void> _showDeletionBlocked() {
@@ -580,9 +617,15 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     switch (result) {
       case DeletionResult.success:
         _showList();
-        _showMessage(ServiceOrderController.deletedMessage);
+        _showMessage(
+          ServiceOrderController.deletedMessage,
+          SnackBarKind.success,
+        );
       case DeletionResult.failure:
-        _showMessage(ServiceOrderController.deleteFailedMessage);
+        _showMessage(
+          ServiceOrderController.deleteFailedMessage,
+          SnackBarKind.error,
+        );
       case DeletionResult.blockedByLink:
         await _showDeletionBlocked();
     }
@@ -620,11 +663,17 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     }
     setState(() => _busy = false);
     if (result == null) {
-      _showMessage(ServiceOrderController.statusChangeFailedMessage);
+      _showMessage(
+        ServiceOrderController.statusChangeFailedMessage,
+        SnackBarKind.error,
+      );
       return;
     }
     if (result != TransitionResult.allowed) {
-      _showMessage(transitionBlockedMessage(result, order.status, target));
+      _showMessage(
+        transitionBlockedMessage(result, order.status, target),
+        SnackBarKind.warning,
+      );
       return;
     }
     final DateTime now = DateTime.now();
@@ -638,7 +687,10 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
       ),
     );
     setState(() => _selected = _withPartItems(changed, controller.partItems));
-    _showMessage(ServiceOrdersModule.statusChangedMessage(target.label));
+    _showMessage(
+      ServiceOrdersModule.statusChangedMessage(target.label),
+      SnackBarKind.success,
+    );
   }
 
   @override

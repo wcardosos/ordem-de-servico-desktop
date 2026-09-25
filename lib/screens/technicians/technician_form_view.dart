@@ -6,6 +6,7 @@ import '../../controllers/technician_controller.dart';
 import '../../core/input_masks.dart';
 import '../../core/validators.dart';
 import '../../models/technician.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/section_header.dart';
 
 class TechnicianFormView extends StatefulWidget {
@@ -84,7 +85,6 @@ class _TechnicianFormViewState extends State<TechnicianFormView> {
     }
     final TechnicianController controller = context
         .read<TechnicianController>();
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final bool saved = await controller.save(
       Technician(
         id: widget.technician?.id,
@@ -101,12 +101,10 @@ class _TechnicianFormViewState extends State<TechnicianFormView> {
       widget.onSaved();
       return;
     }
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          controller.saveError ?? TechnicianController.saveFailedMessage,
-        ),
-      ),
+    showAppSnackBar(
+      context,
+      controller.saveError ?? TechnicianController.saveFailedMessage,
+      kind: SnackBarKind.error,
     );
   }
 

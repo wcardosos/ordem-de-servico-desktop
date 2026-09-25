@@ -6,6 +6,7 @@ import '../../controllers/customer_controller.dart';
 import '../../core/input_masks.dart';
 import '../../core/validators.dart';
 import '../../models/customer.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/section_header.dart';
 
 class CustomerFormView extends StatefulWidget {
@@ -90,7 +91,6 @@ class _CustomerFormViewState extends State<CustomerFormView> {
       return;
     }
     final CustomerController controller = context.read<CustomerController>();
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final bool saved = await controller.save(
       Customer(
         id: widget.customer?.id,
@@ -108,12 +108,10 @@ class _CustomerFormViewState extends State<CustomerFormView> {
       widget.onSaved();
       return;
     }
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          controller.saveError ?? CustomerController.saveFailedMessage,
-        ),
-      ),
+    showAppSnackBar(
+      context,
+      controller.saveError ?? CustomerController.saveFailedMessage,
+      kind: SnackBarKind.error,
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/controllers/customer_controller.dart';
 import 'package:ordem_de_servico/screens/customers/customers_module.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
+import 'package:ordem_de_servico/widgets/app_snack_bar.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -121,6 +122,14 @@ void expectNoDialogs() {
   expect(find.byType(Dialog), findsNothing);
   expect(find.byType(AlertDialog), findsNothing);
   expect(find.byType(BottomSheet), findsNothing);
+}
+
+void expectSnackBarKind(WidgetTester tester, SnackBarKind kind) {
+  final Finder snackBarFinder = find.byType(SnackBar);
+  final SnackBar snackBar = tester.widget<SnackBar>(snackBarFinder);
+  final ColorScheme colors = Theme.of(tester.element(snackBarFinder))
+      .colorScheme;
+  expect(snackBar.backgroundColor, snackBarColor(kind, colors));
 }
 
 void expectNoTechnicalErrorText() {
