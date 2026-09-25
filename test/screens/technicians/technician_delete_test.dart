@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/controllers/technician_controller.dart';
 import 'package:ordem_de_servico/repositories/technician_repository.dart';
-import 'package:ordem_de_servico/screens/technicians/technician_delete_view.dart';
 import 'package:ordem_de_servico/screens/technicians/technician_list_view.dart';
+import 'package:ordem_de_servico/screens/technicians/technicians_module.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
 
 import 'technicians_test_support.dart';
@@ -54,17 +54,30 @@ void main() {
     return exists;
   }
 
-  Future<void> openDeleteView(WidgetTester tester, int id, String name) async {
+  Future<void> openConfirmation(
+    WidgetTester tester,
+    int id,
+    String name,
+  ) async {
     await tapAndPump(
       tester,
       find.byKey(TechnicianListView.deleteButtonKey(id)),
     );
-    expect(find.byType(TechnicianDeleteView), findsOneWidget);
-    expect(find.byType(TechnicianListView), findsNothing);
-    expect(find.text('Deseja excluir o técnico "$name"?'), findsOneWidget);
-    expect(find.text('Cancelar'), findsOneWidget);
-    expect(find.text('Excluir'), findsOneWidget);
-    expectNoDialogs();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byType(TechnicianListView), findsOneWidget);
+    for (final String text in <String>[
+      'Deseja excluir o técnico "$name"?',
+      'Cancelar',
+      'Excluir',
+    ]) {
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(text),
+        ),
+        findsOneWidget,
+      );
+    }
   }
 
   testWidgets(
@@ -74,13 +87,12 @@ void main() {
       final int rafaelId = ids['Rafael Duarte']!;
       await pumpTechniciansModule(tester);
 
-      await openDeleteView(tester, rafaelId, 'Rafael Duarte');
+      await openConfirmation(tester, rafaelId, 'Rafael Duarte');
       await tapAndWaitForDatabase(
         tester,
-        find.byKey(TechnicianDeleteView.confirmButtonKey),
+        find.byKey(TechniciansModule.confirmDeleteButtonKey),
       );
 
-      expect(find.byType(TechnicianDeleteView), findsNothing);
       expect(await technicianExists(tester, rafaelId), isFalse);
       expect(find.text('Rafael Duarte'), findsNothing);
       expect(find.text('Bruno Alencar'), findsOneWidget);
@@ -105,33 +117,31 @@ void main() {
     final int brunoId = ids['Bruno Alencar']!;
     await pumpTechniciansModule(tester);
 
-    await openDeleteView(tester, brunoId, 'Bruno Alencar');
+    await openConfirmation(tester, brunoId, 'Bruno Alencar');
     await tapAndWaitForDatabase(
       tester,
-      find.byKey(TechnicianDeleteView.confirmButtonKey),
+      find.byKey(TechniciansModule.confirmDeleteButtonKey),
     );
 
     expect(await technicianExists(tester, brunoId), isTrue);
     expect(find.byType(TechnicianListView), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byKey(TechnicianListView.noticeKey),
+        of: find.byType(AlertDialog),
         matching: find.text(
           'Este técnico possui 4 ordens de serviço vinculadas e não pode ser excluído.',
         ),
       ),
       findsOneWidget,
     );
-    expect(find.text('Bruno Alencar'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
-    expectNoDialogs();
 
     await tapAndPump(
       tester,
-      find.byKey(TechnicianListView.dismissNoticeButtonKey),
+      find.byKey(TechniciansModule.closeBlockedDialogButtonKey),
     );
 
-    expect(find.byKey(TechnicianListView.noticeKey), findsNothing);
+    expectNoDialogs();
     expect(find.text('Bruno Alencar'), findsOneWidget);
   });
 
@@ -171,10 +181,12 @@ void main() {
     final int rafaelId = ids['Rafael Duarte']!;
     await pumpTechniciansModule(tester);
 
-    await openDeleteView(tester, rafaelId, 'Rafael Duarte');
-    await tapAndPump(tester, find.byKey(TechnicianDeleteView.cancelButtonKey));
+    await openConfirmation(tester, rafaelId, 'Rafael Duarte');
+    await tapAndPump(
+      tester,
+      find.byKey(TechniciansModule.cancelDeleteButtonKey),
+    );
 
-    expect(find.byType(TechnicianDeleteView), findsNothing);
     expect(await technicianExists(tester, rafaelId), isTrue);
     expect(find.text('Rafael Duarte'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
@@ -187,7 +199,7 @@ void main() {
       final Map<String, int> ids = await prepareTechnicians(tester);
       final int rafaelId = ids['Rafael Duarte']!;
       await pumpTechniciansModule(tester);
-      await openDeleteView(tester, rafaelId, 'Rafael Duarte');
+      await openConfirmation(tester, rafaelId, 'Rafael Duarte');
 
       final String blockedPath = temporaryDatabase.blockedDirectory().path;
       await tester.runAsync(() => DatabaseHelper.instance.close());
@@ -195,7 +207,7 @@ void main() {
 
       await tapAndWaitForDatabase(
         tester,
-        find.byKey(TechnicianDeleteView.confirmButtonKey),
+        find.byKey(TechniciansModule.confirmDeleteButtonKey),
       );
 
       expect(

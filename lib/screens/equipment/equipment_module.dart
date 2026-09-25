@@ -7,6 +7,7 @@ import '../../models/customer.dart';
 import '../../models/equipment.dart';
 import '../../repositories/customer_repository.dart';
 import '../../services/database_helper.dart';
+import '../../widgets/confirmation_dialog.dart';
 import 'equipment_form_view.dart';
 import 'equipment_list_view.dart';
 
@@ -104,27 +105,15 @@ class _EquipmentModuleState extends State<EquipmentModule> {
     if (id == null) {
       return;
     }
-    final bool confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            title: const Text('Excluir equipamento'),
-            content: Text('Deseja excluir o equipamento "${equipment.type}"?'),
-            actions: <Widget>[
-              TextButton(
-                key: EquipmentModule.cancelDeleteButtonKey,
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                key: EquipmentModule.confirmDeleteButtonKey,
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Excluir'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    final bool confirmed = await showConfirmationDialog(
+      context,
+      title: 'Excluir equipamento',
+      message: 'Deseja excluir o equipamento "${equipment.type}"?',
+      confirmLabel: 'Excluir',
+      confirmKey: EquipmentModule.confirmDeleteButtonKey,
+      cancelKey: EquipmentModule.cancelDeleteButtonKey,
+      destructive: true,
+    );
     if (!confirmed || !mounted) {
       return;
     }
@@ -141,21 +130,12 @@ class _EquipmentModuleState extends State<EquipmentModule> {
       case DeletionResult.failure:
         _showMessage(EquipmentController.deleteFailedMessage);
       case DeletionResult.blockedByLink:
-        await showDialog<void>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            title: const Text('Exclusão não permitida'),
-            content: Text(
-              EquipmentController.blockedByLinkMessage(controller.linkCount),
-            ),
-            actions: <Widget>[
-              FilledButton(
-                key: EquipmentModule.closeBlockedDialogButtonKey,
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Entendi'),
-              ),
-            ],
+        await showBlockedDialog(
+          context,
+          message: EquipmentController.blockedByLinkMessage(
+            controller.linkCount,
           ),
+          closeKey: EquipmentModule.closeBlockedDialogButtonKey,
         );
     }
   }

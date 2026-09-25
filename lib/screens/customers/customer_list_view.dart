@@ -12,8 +12,7 @@ class CustomerListView extends StatelessWidget {
     required this.onAdd,
     required this.onEdit,
     required this.onDelete,
-    this.notice,
-    this.onDismissNotice,
+    this.busy = false,
   });
 
   static const Key loadingIndicatorKey = Key('customerListLoadingIndicator');
@@ -25,10 +24,6 @@ class CustomerListView extends StatelessWidget {
   static const Key retryButtonKey = Key('customerListRetryButton');
 
   static const Key addButtonKey = Key('customerListAddButton');
-
-  static const Key noticeKey = Key('customerListNotice');
-
-  static const Key dismissNoticeButtonKey = Key('customerListDismissNotice');
 
   static Key editButtonKey(int? id) =>
       ValueKey<String>('customerEditButton-$id');
@@ -42,14 +37,11 @@ class CustomerListView extends StatelessWidget {
 
   final ValueChanged<Customer> onDelete;
 
-  final String? notice;
-
-  final VoidCallback? onDismissNotice;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
     final CustomerController controller = context.watch<CustomerController>();
-    final String? currentNotice = notice;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -58,14 +50,12 @@ class CustomerListView extends StatelessWidget {
           actions: <Widget>[
             FilledButton.icon(
               key: addButtonKey,
-              onPressed: onAdd,
+              onPressed: busy ? null : onAdd,
               icon: const Icon(Icons.add),
               label: const Text('Novo cliente'),
             ),
           ],
         ),
-        if (currentNotice != null)
-          _Notice(message: currentNotice, onDismiss: onDismissNotice),
         Expanded(child: _buildBody(context, controller)),
       ],
     );
@@ -110,7 +100,7 @@ class CustomerListView extends StatelessWidget {
         return ListTile(
           title: Text(customer.name),
           subtitle: Text(formatDocument(customer.document)),
-          onTap: () => onEdit(customer),
+          onTap: busy ? null : () => onEdit(customer),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -118,58 +108,18 @@ class CustomerListView extends StatelessWidget {
                 key: editButtonKey(customer.id),
                 icon: const Icon(Icons.edit_outlined),
                 tooltip: 'Editar cliente',
-                onPressed: () => onEdit(customer),
+                onPressed: busy ? null : () => onEdit(customer),
               ),
               IconButton(
                 key: deleteButtonKey(customer.id),
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'Excluir cliente',
-                onPressed: () => onDelete(customer),
+                onPressed: busy ? null : () => onDelete(customer),
               ),
             ],
           ),
         );
       },
-    );
-  }
-}
-
-class _Notice extends StatelessWidget {
-  const _Notice({required this.message, this.onDismiss});
-
-  final String message;
-
-  final VoidCallback? onDismiss;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    return Container(
-      key: CustomerListView.noticeKey,
-      margin: const EdgeInsets.fromLTRB(32, 0, 32, 16),
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-      decoration: BoxDecoration(
-        color: colors.errorContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(Icons.info_outline, color: colors.onErrorContainer),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: colors.onErrorContainer),
-            ),
-          ),
-          IconButton(
-            key: CustomerListView.dismissNoticeButtonKey,
-            icon: Icon(Icons.close, color: colors.onErrorContainer),
-            tooltip: 'Fechar aviso',
-            onPressed: onDismiss,
-          ),
-        ],
-      ),
     );
   }
 }

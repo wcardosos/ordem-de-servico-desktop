@@ -19,6 +19,7 @@ import '../../repositories/technician_repository.dart';
 import '../../services/database_helper.dart';
 import '../../services/image_file_picker.dart';
 import '../../services/image_service.dart';
+import '../../widgets/confirmation_dialog.dart';
 import 'service_order_detail_view.dart';
 import 'service_order_edit_view.dart';
 import 'service_order_form_view.dart';
@@ -361,29 +362,15 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     if (order == null) {
       return;
     }
-    final bool confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            title: const Text('Remover imagem'),
-            content: Text(
-              'Deseja remover a imagem da ordem de serviço "${order.number}"?',
-            ),
-            actions: <Widget>[
-              TextButton(
-                key: ServiceOrdersModule.cancelRemoveImageButtonKey,
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                key: ServiceOrdersModule.confirmRemoveImageButtonKey,
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Remover'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    final bool confirmed = await showConfirmationDialog(
+      context,
+      title: 'Remover imagem',
+      message: 'Deseja remover a imagem da ordem de serviço "${order.number}"?',
+      confirmLabel: 'Remover',
+      confirmKey: ServiceOrdersModule.confirmRemoveImageButtonKey,
+      cancelKey: ServiceOrdersModule.cancelRemoveImageButtonKey,
+      destructive: true,
+    );
     if (!confirmed || !mounted) {
       return;
     }
@@ -458,27 +445,15 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     if (itemId == null) {
       return;
     }
-    final bool confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            title: const Text('Remover item'),
-            content: Text('Deseja remover o item "${item.description}"?'),
-            actions: <Widget>[
-              TextButton(
-                key: ServiceOrdersModule.cancelRemovePartItemButtonKey,
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                key: ServiceOrdersModule.confirmRemovePartItemButtonKey,
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Remover'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    final bool confirmed = await showConfirmationDialog(
+      context,
+      title: 'Remover item',
+      message: 'Deseja remover o item "${item.description}"?',
+      confirmLabel: 'Remover',
+      confirmKey: ServiceOrdersModule.confirmRemovePartItemButtonKey,
+      cancelKey: ServiceOrdersModule.cancelRemovePartItemButtonKey,
+      destructive: true,
+    );
     if (!confirmed || !mounted) {
       return;
     }
@@ -565,19 +540,10 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
   }
 
   Future<void> _showDeletionBlocked() {
-    return showDialog<void>(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Exclusão não permitida'),
-        content: const Text(ServiceOrderController.deletionBlockedMessage),
-        actions: <Widget>[
-          FilledButton(
-            key: ServiceOrdersModule.closeBlockedDialogButtonKey,
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Entendi'),
-          ),
-        ],
-      ),
+    return showBlockedDialog(
+      context,
+      message: ServiceOrderController.deletionBlockedMessage,
+      closeKey: ServiceOrdersModule.closeBlockedDialogButtonKey,
     );
   }
 
@@ -591,29 +557,15 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
       await _showDeletionBlocked();
       return;
     }
-    final bool confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            title: const Text('Excluir ordem de serviço'),
-            content: Text(
-              'Deseja excluir a ordem de serviço "${order.number}"?',
-            ),
-            actions: <Widget>[
-              TextButton(
-                key: ServiceOrdersModule.cancelDeleteButtonKey,
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                key: ServiceOrdersModule.confirmDeleteButtonKey,
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Excluir'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    final bool confirmed = await showConfirmationDialog(
+      context,
+      title: 'Excluir ordem de serviço',
+      message: 'Deseja excluir a ordem de serviço "${order.number}"?',
+      confirmLabel: 'Excluir',
+      confirmKey: ServiceOrdersModule.confirmDeleteButtonKey,
+      cancelKey: ServiceOrdersModule.cancelDeleteButtonKey,
+      destructive: true,
+    );
     if (!confirmed || !mounted) {
       return;
     }
@@ -641,30 +593,16 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     if (order == null) {
       return;
     }
-    final bool confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            title: const Text('Alterar status'),
-            content: Text(
-              'Deseja alterar o status da ordem de serviço "${order.number}" '
-              'de ${order.status.label} para ${target.label}?',
-            ),
-            actions: <Widget>[
-              TextButton(
-                key: ServiceOrdersModule.cancelStatusChangeButtonKey,
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                key: ServiceOrdersModule.confirmStatusChangeButtonKey,
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Confirmar'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    final bool confirmed = await showConfirmationDialog(
+      context,
+      title: 'Alterar status',
+      message:
+          'Deseja alterar o status da ordem de serviço "${order.number}" '
+          'de ${order.status.label} para ${target.label}?',
+      confirmLabel: 'Confirmar',
+      confirmKey: ServiceOrdersModule.confirmStatusChangeButtonKey,
+      cancelKey: ServiceOrdersModule.cancelStatusChangeButtonKey,
+    );
     if (!confirmed || !mounted) {
       return;
     }

@@ -4,14 +4,24 @@ import 'package:provider/provider.dart';
 import '../../controllers/technician_controller.dart';
 import '../../core/deletion_result.dart';
 import '../../models/technician.dart';
-import 'technician_delete_view.dart';
+import '../../widgets/confirmation_dialog.dart';
 import 'technician_form_view.dart';
 import 'technician_list_view.dart';
 
-enum _TechnicianView { list, form, delete }
+enum _TechnicianView { list, form }
 
 class TechniciansModule extends StatefulWidget {
   const TechniciansModule({super.key});
+
+  static const Key confirmDeleteButtonKey = Key(
+    'technicianDeleteConfirmButton',
+  );
+
+  static const Key cancelDeleteButtonKey = Key('technicianDeleteCancelButton');
+
+  static const Key closeBlockedDialogButtonKey = Key(
+    'technicianDeleteBlockedCloseButton',
+  );
 
   @override
   State<TechniciansModule> createState() => _TechniciansModuleState();
@@ -22,9 +32,7 @@ class _TechniciansModuleState extends State<TechniciansModule> {
 
   Technician? _selected;
 
-  String? _notice;
-
-  bool _deleting = false;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -41,7 +49,6 @@ class _TechniciansModuleState extends State<TechniciansModule> {
     setState(() {
       _view = view;
       _selected = technician;
-      _notice = null;
     });
   }
 
@@ -56,34 +63,44 @@ class _TechniciansModuleState extends State<TechniciansModule> {
     _showMessage(TechnicianController.savedMessage);
   }
 
-  Future<void> _confirmDeletion() async {
-    final int? id = _selected?.id;
+  Future<void> _delete(Technician technician) async {
+    final int? id = technician.id;
     if (id == null) {
-      _show(_TechnicianView.list);
+      return;
+    }
+    final bool confirmed = await showConfirmationDialog(
+      context,
+      title: 'Excluir técnico',
+      message: 'Deseja excluir o técnico "${technician.name}"?',
+      confirmLabel: 'Excluir',
+      confirmKey: TechniciansModule.confirmDeleteButtonKey,
+      cancelKey: TechniciansModule.cancelDeleteButtonKey,
+      destructive: true,
+    );
+    if (!confirmed || !mounted) {
       return;
     }
     final TechnicianController controller = context
         .read<TechnicianController>();
-    setState(() => _deleting = true);
+    setState(() => _busy = true);
     final DeletionResult result = await controller.delete(id);
     if (!mounted) {
       return;
     }
-    setState(() {
-      _deleting = false;
-      _view = _TechnicianView.list;
-      _selected = null;
-      _notice = result == DeletionResult.blockedByLink
-          ? TechnicianController.blockedByLinkMessage(controller.linkCount)
-          : null;
-    });
+    setState(() => _busy = false);
     switch (result) {
       case DeletionResult.success:
         _showMessage(TechnicianController.deletedMessage);
       case DeletionResult.failure:
         _showMessage(TechnicianController.deleteFailedMessage);
       case DeletionResult.blockedByLink:
-        break;
+        await showBlockedDialog(
+          context,
+          message: TechnicianController.blockedByLinkMessage(
+            controller.linkCount,
+          ),
+          closeKey: TechniciansModule.closeBlockedDialogButtonKey,
+        );
     }
   }
 
@@ -98,23 +115,13 @@ class _TechniciansModuleState extends State<TechniciansModule> {
           onSaved: _handleSaved,
           onCancel: () => _show(_TechnicianView.list),
         );
-      case _TechnicianView.delete when selected != null:
-        return TechnicianDeleteView(
-          technician: selected,
-          deleting: _deleting,
-          onCancel: () => _show(_TechnicianView.list),
-          onConfirm: _confirmDeletion,
-        );
       case _TechnicianView.list:
-      case _TechnicianView.delete:
         return TechnicianListView(
-          notice: _notice,
-          onDismissNotice: () => setState(() => _notice = null),
+          busy: _busy,
           onAdd: () => _show(_TechnicianView.form),
           onEdit: (Technician technician) =>
               _show(_TechnicianView.form, technician),
-          onDelete: (Technician technician) =>
-              _show(_TechnicianView.delete, technician),
+          onDelete: _delete,
         );
     }
   }

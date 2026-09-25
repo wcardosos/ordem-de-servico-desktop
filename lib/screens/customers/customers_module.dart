@@ -4,14 +4,22 @@ import 'package:provider/provider.dart';
 import '../../controllers/customer_controller.dart';
 import '../../core/deletion_result.dart';
 import '../../models/customer.dart';
-import 'customer_delete_view.dart';
+import '../../widgets/confirmation_dialog.dart';
 import 'customer_form_view.dart';
 import 'customer_list_view.dart';
 
-enum _CustomerView { list, form, delete }
+enum _CustomerView { list, form }
 
 class CustomersModule extends StatefulWidget {
   const CustomersModule({super.key});
+
+  static const Key confirmDeleteButtonKey = Key('customerDeleteConfirmButton');
+
+  static const Key cancelDeleteButtonKey = Key('customerDeleteCancelButton');
+
+  static const Key closeBlockedDialogButtonKey = Key(
+    'customerDeleteBlockedCloseButton',
+  );
 
   @override
   State<CustomersModule> createState() => _CustomersModuleState();
@@ -22,9 +30,7 @@ class _CustomersModuleState extends State<CustomersModule> {
 
   Customer? _selected;
 
-  String? _notice;
-
-  bool _deleting = false;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -41,7 +47,6 @@ class _CustomersModuleState extends State<CustomersModule> {
     setState(() {
       _view = view;
       _selected = customer;
-      _notice = null;
     });
   }
 
@@ -56,33 +61,43 @@ class _CustomersModuleState extends State<CustomersModule> {
     _showMessage(CustomerController.savedMessage);
   }
 
-  Future<void> _confirmDeletion() async {
-    final int? id = _selected?.id;
+  Future<void> _delete(Customer customer) async {
+    final int? id = customer.id;
     if (id == null) {
-      _show(_CustomerView.list);
+      return;
+    }
+    final bool confirmed = await showConfirmationDialog(
+      context,
+      title: 'Excluir cliente',
+      message: 'Deseja excluir o cliente "${customer.name}"?',
+      confirmLabel: 'Excluir',
+      confirmKey: CustomersModule.confirmDeleteButtonKey,
+      cancelKey: CustomersModule.cancelDeleteButtonKey,
+      destructive: true,
+    );
+    if (!confirmed || !mounted) {
       return;
     }
     final CustomerController controller = context.read<CustomerController>();
-    setState(() => _deleting = true);
+    setState(() => _busy = true);
     final DeletionResult result = await controller.delete(id);
     if (!mounted) {
       return;
     }
-    setState(() {
-      _deleting = false;
-      _view = _CustomerView.list;
-      _selected = null;
-      _notice = result == DeletionResult.blockedByLink
-          ? CustomerController.blockedByLinkMessage(controller.linkCount)
-          : null;
-    });
+    setState(() => _busy = false);
     switch (result) {
       case DeletionResult.success:
         _showMessage(CustomerController.deletedMessage);
       case DeletionResult.failure:
         _showMessage(CustomerController.deleteFailedMessage);
       case DeletionResult.blockedByLink:
-        break;
+        await showBlockedDialog(
+          context,
+          message: CustomerController.blockedByLinkMessage(
+            controller.linkCount,
+          ),
+          closeKey: CustomersModule.closeBlockedDialogButtonKey,
+        );
     }
   }
 
@@ -97,22 +112,12 @@ class _CustomersModuleState extends State<CustomersModule> {
           onSaved: _handleSaved,
           onCancel: () => _show(_CustomerView.list),
         );
-      case _CustomerView.delete when selected != null:
-        return CustomerDeleteView(
-          customer: selected,
-          deleting: _deleting,
-          onCancel: () => _show(_CustomerView.list),
-          onConfirm: _confirmDeletion,
-        );
       case _CustomerView.list:
-      case _CustomerView.delete:
         return CustomerListView(
-          notice: _notice,
-          onDismissNotice: () => setState(() => _notice = null),
+          busy: _busy,
           onAdd: () => _show(_CustomerView.form),
           onEdit: (Customer customer) => _show(_CustomerView.form, customer),
-          onDelete: (Customer customer) =>
-              _show(_CustomerView.delete, customer),
+          onDelete: _delete,
         );
     }
   }

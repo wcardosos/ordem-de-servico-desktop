@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ordem_de_servico/controllers/customer_controller.dart';
 import 'package:ordem_de_servico/repositories/customer_repository.dart';
-import 'package:ordem_de_servico/screens/customers/customer_delete_view.dart';
 import 'package:ordem_de_servico/screens/customers/customer_list_view.dart';
+import 'package:ordem_de_servico/screens/customers/customers_module.dart';
 import 'package:ordem_de_servico/services/database_helper.dart';
 
 import 'customers_test_support.dart';
@@ -72,14 +72,27 @@ void main() {
     return exists;
   }
 
-  Future<void> openDeleteView(WidgetTester tester, int id, String name) async {
+  Future<void> openConfirmation(
+    WidgetTester tester,
+    int id,
+    String name,
+  ) async {
     await tapAndPump(tester, find.byKey(CustomerListView.deleteButtonKey(id)));
-    expect(find.byType(CustomerDeleteView), findsOneWidget);
-    expect(find.byType(CustomerListView), findsNothing);
-    expect(find.text('Deseja excluir o cliente "$name"?'), findsOneWidget);
-    expect(find.text('Cancelar'), findsOneWidget);
-    expect(find.text('Excluir'), findsOneWidget);
-    expectNoDialogs();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byType(CustomerListView), findsOneWidget);
+    for (final String text in <String>[
+      'Deseja excluir o cliente "$name"?',
+      'Cancelar',
+      'Excluir',
+    ]) {
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(text),
+        ),
+        findsOneWidget,
+      );
+    }
   }
 
   testWidgets('deletes a customer without links after confirmation', (
@@ -89,13 +102,12 @@ void main() {
     final int marcosId = ids['Marcos Vieira']!;
     await pumpCustomersModule(tester);
 
-    await openDeleteView(tester, marcosId, 'Marcos Vieira');
+    await openConfirmation(tester, marcosId, 'Marcos Vieira');
     await tapAndWaitForDatabase(
       tester,
-      find.byKey(CustomerDeleteView.confirmButtonKey),
+      find.byKey(CustomersModule.confirmDeleteButtonKey),
     );
 
-    expect(find.byType(CustomerDeleteView), findsNothing);
     expect(await customerExists(tester, marcosId), isFalse);
     expect(find.text('Marcos Vieira'), findsNothing);
     expect(find.text('Ana Ribeiro'), findsOneWidget);
@@ -120,33 +132,31 @@ void main() {
       final int anaId = ids['Ana Ribeiro']!;
       await pumpCustomersModule(tester);
 
-      await openDeleteView(tester, anaId, 'Ana Ribeiro');
+      await openConfirmation(tester, anaId, 'Ana Ribeiro');
       await tapAndWaitForDatabase(
         tester,
-        find.byKey(CustomerDeleteView.confirmButtonKey),
+        find.byKey(CustomersModule.confirmDeleteButtonKey),
       );
 
       expect(await customerExists(tester, anaId), isTrue);
       expect(find.byType(CustomerListView), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byKey(CustomerListView.noticeKey),
+          of: find.byType(AlertDialog),
           matching: find.text(
             'Este cliente possui 5 registros vinculados e não pode ser excluído.',
           ),
         ),
         findsOneWidget,
       );
-      expect(find.text('Ana Ribeiro'), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
-      expectNoDialogs();
 
       await tapAndPump(
         tester,
-        find.byKey(CustomerListView.dismissNoticeButtonKey),
+        find.byKey(CustomersModule.closeBlockedDialogButtonKey),
       );
 
-      expect(find.byKey(CustomerListView.noticeKey), findsNothing);
+      expectNoDialogs();
       expect(find.text('Ana Ribeiro'), findsOneWidget);
     },
   );
@@ -188,10 +198,9 @@ void main() {
     final int marcosId = ids['Marcos Vieira']!;
     await pumpCustomersModule(tester);
 
-    await openDeleteView(tester, marcosId, 'Marcos Vieira');
-    await tapAndPump(tester, find.byKey(CustomerDeleteView.cancelButtonKey));
+    await openConfirmation(tester, marcosId, 'Marcos Vieira');
+    await tapAndPump(tester, find.byKey(CustomersModule.cancelDeleteButtonKey));
 
-    expect(find.byType(CustomerDeleteView), findsNothing);
     expect(await customerExists(tester, marcosId), isTrue);
     expect(find.text('Marcos Vieira'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
@@ -204,7 +213,7 @@ void main() {
       final Map<String, int> ids = await prepareCustomers(tester);
       final int marcosId = ids['Marcos Vieira']!;
       await pumpCustomersModule(tester);
-      await openDeleteView(tester, marcosId, 'Marcos Vieira');
+      await openConfirmation(tester, marcosId, 'Marcos Vieira');
 
       final String blockedPath = temporaryDatabase.blockedDirectory().path;
       await tester.runAsync(() => DatabaseHelper.instance.close());
@@ -212,7 +221,7 @@ void main() {
 
       await tapAndWaitForDatabase(
         tester,
-        find.byKey(CustomerDeleteView.confirmButtonKey),
+        find.byKey(CustomersModule.confirmDeleteButtonKey),
       );
 
       expect(

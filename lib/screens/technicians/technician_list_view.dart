@@ -11,8 +11,7 @@ class TechnicianListView extends StatelessWidget {
     required this.onAdd,
     required this.onEdit,
     required this.onDelete,
-    this.notice,
-    this.onDismissNotice,
+    this.busy = false,
   });
 
   static const Key loadingIndicatorKey = Key('technicianListLoadingIndicator');
@@ -24,10 +23,6 @@ class TechnicianListView extends StatelessWidget {
   static const Key retryButtonKey = Key('technicianListRetryButton');
 
   static const Key addButtonKey = Key('technicianListAddButton');
-
-  static const Key noticeKey = Key('technicianListNotice');
-
-  static const Key dismissNoticeButtonKey = Key('technicianListDismissNotice');
 
   static Key editButtonKey(int? id) =>
       ValueKey<String>('technicianEditButton-$id');
@@ -41,15 +36,12 @@ class TechnicianListView extends StatelessWidget {
 
   final ValueChanged<Technician> onDelete;
 
-  final String? notice;
-
-  final VoidCallback? onDismissNotice;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
     final TechnicianController controller = context
         .watch<TechnicianController>();
-    final String? currentNotice = notice;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -58,14 +50,12 @@ class TechnicianListView extends StatelessWidget {
           actions: <Widget>[
             FilledButton.icon(
               key: addButtonKey,
-              onPressed: onAdd,
+              onPressed: busy ? null : onAdd,
               icon: const Icon(Icons.add),
               label: const Text('Novo técnico'),
             ),
           ],
         ),
-        if (currentNotice != null)
-          _Notice(message: currentNotice, onDismiss: onDismissNotice),
         Expanded(child: _buildBody(context, controller)),
       ],
     );
@@ -111,7 +101,7 @@ class TechnicianListView extends StatelessWidget {
         return ListTile(
           title: Text(technician.name),
           subtitle: Text(technician.specialty),
-          onTap: () => onEdit(technician),
+          onTap: busy ? null : () => onEdit(technician),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -131,58 +121,18 @@ class TechnicianListView extends StatelessWidget {
                 key: editButtonKey(technician.id),
                 icon: const Icon(Icons.edit_outlined),
                 tooltip: 'Editar técnico',
-                onPressed: () => onEdit(technician),
+                onPressed: busy ? null : () => onEdit(technician),
               ),
               IconButton(
                 key: deleteButtonKey(technician.id),
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'Excluir técnico',
-                onPressed: () => onDelete(technician),
+                onPressed: busy ? null : () => onDelete(technician),
               ),
             ],
           ),
         );
       },
-    );
-  }
-}
-
-class _Notice extends StatelessWidget {
-  const _Notice({required this.message, this.onDismiss});
-
-  final String message;
-
-  final VoidCallback? onDismiss;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    return Container(
-      key: TechnicianListView.noticeKey,
-      margin: const EdgeInsets.fromLTRB(32, 0, 32, 16),
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-      decoration: BoxDecoration(
-        color: colors.errorContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(Icons.info_outline, color: colors.onErrorContainer),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: colors.onErrorContainer),
-            ),
-          ),
-          IconButton(
-            key: TechnicianListView.dismissNoticeButtonKey,
-            icon: Icon(Icons.close, color: colors.onErrorContainer),
-            tooltip: 'Fechar aviso',
-            onPressed: onDismiss,
-          ),
-        ],
-      ),
     );
   }
 }
