@@ -42,7 +42,10 @@ void main() {
 
   List<String> imagesDirectoryFileNames() {
     final Directory directory = Directory(
-      p.join(temporaryDatabase.directory.path, ImageService.imagesDirectoryName),
+      p.join(
+        temporaryDatabase.directory.path,
+        ImageService.imagesDirectoryName,
+      ),
     );
     if (!directory.existsSync()) {
       return <String>[];
@@ -265,6 +268,27 @@ void main() {
     );
   });
 
+  testWidgets('a picker that fails shows an error and attaches nothing', (
+    WidgetTester tester,
+  ) async {
+    await seedOrder(tester);
+    await pumpServiceOrdersModule(
+      tester,
+      pickImage: () async => throw Exception('portal unavailable'),
+    );
+    await openDetail(tester, 'OS-2026-0001');
+
+    await tapAttach(tester);
+
+    expect(await storedImagePathOf(tester, 'OS-2026-0001'), isNull);
+    expect(imagesDirectoryFileNames(), isEmpty);
+    expect(displayedImagePath(tester), isNull);
+    expect(
+      inSnackBar(ServiceOrdersModule.imagePickerFailedMessage),
+      findsOneWidget,
+    );
+  });
+
   for (final String status in <String>['completed', 'cancelled']) {
     testWidgets('an order with status $status offers no image action', (
       WidgetTester tester,
@@ -343,10 +367,7 @@ void main() {
     await pumpServiceOrdersModule(tester, pickImage: () async => source);
     await openDetail(tester, 'OS-2026-0001');
     final File databaseFile = File(
-      p.join(
-        temporaryDatabase.directory.path,
-        DatabaseHelper.databaseFileName,
-      ),
+      p.join(temporaryDatabase.directory.path, DatabaseHelper.databaseFileName),
     );
     final int sizeBefore = databaseFile.lengthSync();
 

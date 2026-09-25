@@ -8,9 +8,9 @@ environment:
   sdk: ^3.13.2
 
 dependencies:
+  file_selector: ^1.1.0
   flutter:
     sdk: flutter
-  file_picker: ^13.0.0
   intl: ^0.20.3
   path: ^1.9.1
   path_provider: ^2.1.6

@@ -1,14 +1,15 @@
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 
 import 'image_service.dart';
 
 typedef ImageFilePicker = Future<String?> Function();
 
 Future<String?> pickImageFile() async {
-  final PlatformFile? picked = await FilePicker.pickFile(
-    dialogTitle: 'Selecionar imagem',
-    type: FileType.custom,
-    allowedExtensions: ImageService.acceptedExtensions,
+  final XFile? picked = await openFile(
+    acceptedTypeGroups: <XTypeGroup>[
+      XTypeGroup(label: 'Imagens', extensions: ImageService.acceptedExtensions),
+    ],
+    confirmButtonText: 'Selecionar',
   );
   return picked?.path;
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -87,6 +89,9 @@ class ServiceOrdersModule extends StatefulWidget {
   static const String imageAttachedMessage = 'Imagem anexada.';
 
   static const String imageRemovedMessage = 'Imagem removida.';
+
+  static const String imagePickerFailedMessage =
+      'Não foi possível abrir o seletor de imagens.';
 
   static String statusChangedMessage(String target) =>
       'Status alterado para $target.';
@@ -343,7 +348,18 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
     }
     final ServiceOrderController controller = context
         .read<ServiceOrderController>();
-    final String? sourcePath = await widget.pickImage();
+    final String? sourcePath;
+    try {
+      sourcePath = await widget.pickImage();
+    } catch (_) {
+      if (mounted) {
+        _showMessage(
+          ServiceOrdersModule.imagePickerFailedMessage,
+          SnackBarKind.error,
+        );
+      }
+      return;
+    }
     if (sourcePath == null || !mounted) {
       return;
     }
@@ -423,6 +439,9 @@ class _ServiceOrdersModuleState extends State<ServiceOrdersModule> {
       refreshed,
       controller.partItems,
     );
+    if (_imagePath != null) {
+      await FileImage(File(_imagePath!)).evict();
+    }
     await _resolveImage(updated);
     if (!mounted) {
       return;
