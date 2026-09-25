@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/technician_controller.dart';
 import '../../models/technician.dart';
+import '../../widgets/destructive_button_styles.dart';
 import '../../widgets/section_header.dart';
 
 class TechnicianListView extends StatelessWidget {
@@ -127,6 +128,7 @@ class TechnicianListView extends StatelessWidget {
                 key: deleteButtonKey(technician.id),
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'Excluir técnico',
+                style: destructiveIconButtonStyle(colors),
                 onPressed: busy ? null : () => onDelete(technician),
               ),
             ],

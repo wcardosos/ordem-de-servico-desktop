@@ -59,10 +59,18 @@ void main() {
     int id,
     String name,
   ) async {
-    await tapAndPump(
-      tester,
-      find.byKey(TechnicianListView.deleteButtonKey(id)),
+    final Finder deleteButton = find.byKey(
+      TechnicianListView.deleteButtonKey(id),
     );
+    expect(
+      tester
+          .widget<IconButton>(deleteButton)
+          .style
+          ?.foregroundColor
+          ?.resolve(<WidgetState>{}),
+      Theme.of(tester.element(deleteButton)).colorScheme.error,
+    );
+    await tapAndPump(tester, deleteButton);
     expect(find.byType(AlertDialog), findsOneWidget);
     expect(find.byType(TechnicianListView), findsOneWidget);
     for (final String text in <String>[

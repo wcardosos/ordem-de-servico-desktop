@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../controllers/customer_controller.dart';
 import '../../core/input_masks.dart';
 import '../../models/customer.dart';
+import '../../widgets/destructive_button_styles.dart';
 import '../../widgets/section_header.dart';
 
 class CustomerListView extends StatelessWidget {
@@ -62,6 +63,7 @@ class CustomerListView extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context, CustomerController controller) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     if (controller.loading) {
       return const Center(
         child: CircularProgressIndicator(key: loadingIndicatorKey),
@@ -114,6 +116,7 @@ class CustomerListView extends StatelessWidget {
                 key: deleteButtonKey(customer.id),
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'Excluir cliente',
+                style: destructiveIconButtonStyle(colors),
                 onPressed: busy ? null : () => onDelete(customer),
               ),
             ],

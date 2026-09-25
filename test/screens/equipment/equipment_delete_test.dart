@@ -53,7 +53,18 @@ void main() {
   }
 
   Future<void> openConfirmation(WidgetTester tester, int id) async {
-    await tapAndPump(tester, find.byKey(EquipmentListView.deleteButtonKey(id)));
+    final Finder deleteButton = find.byKey(
+      EquipmentListView.deleteButtonKey(id),
+    );
+    expect(
+      tester
+          .widget<IconButton>(deleteButton)
+          .style
+          ?.foregroundColor
+          ?.resolve(<WidgetState>{}),
+      Theme.of(tester.element(deleteButton)).colorScheme.error,
+    );
+    await tapAndPump(tester, deleteButton);
     expect(find.byType(AlertDialog), findsOneWidget);
     expect(
       find.descendant(

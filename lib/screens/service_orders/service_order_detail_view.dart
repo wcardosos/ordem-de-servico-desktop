@@ -10,6 +10,7 @@ import '../../core/service_order_transitions.dart';
 import '../../core/validators.dart';
 import '../../models/part_item.dart';
 import '../../models/service_order.dart';
+import '../../widgets/destructive_button_styles.dart';
 import '../../widgets/section_header.dart';
 
 class ServiceOrderDetailView extends StatelessWidget {
@@ -141,6 +142,7 @@ class ServiceOrderDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final DateTime? completedAt = order.completedAt;
+    final ColorScheme colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -156,6 +158,7 @@ class ServiceOrderDetailView extends StatelessWidget {
             const SizedBox(width: 12),
             OutlinedButton.icon(
               key: deleteButtonKey,
+              style: destructiveOutlinedButtonStyle(colors),
               onPressed: busy ? null : onDelete,
               icon: const Icon(Icons.delete_outline),
               label: const Text('Excluir'),
@@ -514,6 +517,7 @@ class _PartsSectionState extends State<_PartsSection> {
             IconButton(
               key: ServiceOrderDetailView.removePartItemButtonKey(itemId),
               tooltip: 'Remover item',
+              style: destructiveIconButtonStyle(theme.colorScheme),
               onPressed: widget.busy
                   ? null
                   : () => widget.onRemovePartItem(item),
@@ -722,12 +726,11 @@ class _ImageSection extends StatelessWidget {
               height: 240,
               fit: BoxFit.contain,
               alignment: Alignment.centerLeft,
-              errorBuilder:
-                  (
-                    BuildContext context,
-                    Object error,
-                    StackTrace? stackTrace,
-                  ) => const Icon(Icons.broken_image_outlined, size: 48),
+              errorBuilder: (
+                BuildContext context,
+                Object error,
+                StackTrace? stackTrace,
+              ) => const Icon(Icons.broken_image_outlined, size: 48),
             ),
           if (editable) ...<Widget>[
             const SizedBox(height: 12),
@@ -744,6 +747,7 @@ class _ImageSection extends StatelessWidget {
                 if (path != null || imageMissing)
                   OutlinedButton.icon(
                     key: ServiceOrderDetailView.removeImageButtonKey,
+                    style: destructiveOutlinedButtonStyle(theme.colorScheme),
                     onPressed: busy ? null : onRemoveImage,
                     icon: const Icon(Icons.delete_outline),
                     label: const Text('Remover imagem'),

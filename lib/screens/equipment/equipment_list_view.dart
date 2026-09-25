@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/equipment_controller.dart';
 import '../../models/equipment.dart';
+import '../../widgets/destructive_button_styles.dart';
 import '../../widgets/section_header.dart';
 
 class EquipmentListView extends StatelessWidget {
@@ -67,12 +68,13 @@ class EquipmentListView extends StatelessWidget {
             ),
           ],
         ),
-        Expanded(child: _buildBody(controller)),
+        Expanded(child: _buildBody(context, controller)),
       ],
     );
   }
 
-  Widget _buildBody(EquipmentController controller) {
+  Widget _buildBody(BuildContext context, EquipmentController controller) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
     if (controller.loading) {
       return const Center(
         child: CircularProgressIndicator(key: loadingIndicatorKey),
@@ -125,6 +127,7 @@ class EquipmentListView extends StatelessWidget {
                 key: deleteButtonKey(item.id),
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'Excluir equipamento',
+                style: destructiveIconButtonStyle(colors),
                 onPressed: busy ? null : () => onDelete(item),
               ),
             ],

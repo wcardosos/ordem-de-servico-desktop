@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'destructive_button_styles.dart';
+
 Future<bool> showConfirmationDialog(
   BuildContext context, {
   required String title,
@@ -23,12 +25,7 @@ Future<bool> showConfirmationDialog(
         ),
         FilledButton(
           key: confirmKey,
-          style: destructive
-              ? FilledButton.styleFrom(
-                  backgroundColor: colors.error,
-                  foregroundColor: colors.onError,
-                )
-              : null,
+          style: destructive ? destructiveFilledButtonStyle(colors) : null,
           onPressed: () => Navigator.of(context).pop(true),
           child: Text(confirmLabel),
         ),
